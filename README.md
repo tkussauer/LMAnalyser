@@ -39,6 +39,18 @@ java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start V-100 --out ang
 Namen werden ohne Beachtung der Groß-/Kleinschreibung und ohne Namespace-Präfix verglichen
 (`ID`, `Id`, `t:id` passen alle auf `id`).
 
+## In IntelliJ IDEA starten
+
+1. *File → Open…* und den Projektordner (mit der `pom.xml`) öffnen – IntelliJ erkennt das Maven-Projekt.
+2. Oben rechts die Startkonfiguration **XML Tree Viewer (Beispiel)** wählen (liegt in `.run/`)
+   und auf ▶ klicken. Ergebnis: `target/tree.html`.
+3. Für eigene Dateien: *Run → Edit Configurations…* → Konfiguration kopieren und unter
+   *Program arguments* die eigenen Pfade eintragen, z. B.
+   `--start C:\vorlagen\angebot.cml --dir C:\referenzen --out C:\temp\baum.html`.
+
+Alternativ `src/main/java/de/xmltree/Main.java` öffnen, auf den grünen Pfeil neben `main`
+klicken und anschließend die Argumente wie in Schritt 3 ergänzen.
+
 ## So werden Referenzen aufgelöst
 
 1. Alle `*.cml`-Dateien (bzw. die per `--ext` angegebenen Endungen) werden eingelesen. Am **Root-Element** wird die ID und die Description
