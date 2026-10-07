@@ -36,13 +36,13 @@ public class XmlScanner {
         return warnings;
     }
 
-    /** Liest alle *.xml-Dateien unterhalb der angegebenen Verzeichnisse (rekursiv) ein. */
+    /** Liest alle Dateien mit den konfigurierten Endungen (Standard *.cml) unterhalb der angegebenen Verzeichnisse (rekursiv) ein. */
     public List<XmlFile> scanDirectories(List<Path> directories) {
         List<XmlFile> result = new ArrayList<>();
         for (Path dir : directories) {
             try (Stream<Path> files = Files.walk(dir)) {
                 files.filter(Files::isRegularFile)
-                        .filter(p -> p.getFileName().toString().toLowerCase().endsWith(".xml"))
+                        .filter(p -> options.hasExtension(p.getFileName().toString()))
                         .sorted()
                         .forEach(p -> {
                             try {

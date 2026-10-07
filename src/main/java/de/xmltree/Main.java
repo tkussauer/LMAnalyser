@@ -18,7 +18,7 @@ public final class Main {
 
             Optionen:
               --start <wert>      Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht)
-              --dir <verz>        Verzeichnis mit XML-Dateien, rekursiv; mehrfach angebbar
+              --dir <verz>        Verzeichnis mit CML-/XML-Dateien, rekursiv; mehrfach angebbar
                                   (Standard: Verzeichnis der Startdatei bzw. aktuelles Verzeichnis)
               --out <datei>       Ziel-HTML-Datei (Standard: tree.html)
               --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id)
@@ -26,6 +26,7 @@ public final class Main {
               --ref-names <a,b>   Nur diese Attribute/Elemente als Referenz werten. Ohne Angabe wird
                                   jeder Attributwert und Elementtext mit allen IDs/Descriptions verglichen.
               --ignore-case       Groß-/Kleinschreibung beim Referenzvergleich ignorieren
+              --ext <a,b>         Dateiendungen der einzulesenden Dateien (Standard: cml), z. B. cml,xml
               -h, --help          Diese Hilfe
             """;
 
@@ -51,6 +52,7 @@ public final class Main {
         Set<String> descNames = Set.of("description");
         Set<String> refNames = Set.of();
         boolean ignoreCase = false;
+        Set<String> extensions = ScanOptions.DEFAULT_EXTENSIONS;
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -66,6 +68,7 @@ public final class Main {
                 case "--desc-names" -> descNames = names(next(args, ++i, arg));
                 case "--ref-names" -> refNames = names(next(args, ++i, arg));
                 case "--ignore-case" -> ignoreCase = true;
+                case "--ext" -> extensions = names(next(args, ++i, arg));
                 default -> throw new IllegalArgumentException("Unbekannte Option: " + arg);
             }
         }
@@ -85,12 +88,12 @@ public final class Main {
             }
         }
 
-        ScanOptions options = new ScanOptions(idNames, descNames, refNames, ignoreCase);
+        ScanOptions options = new ScanOptions(idNames, descNames, refNames, ignoreCase, extensions);
         XmlScanner scanner = new XmlScanner(options);
         List<XmlFile> files = scanner.scanDirectories(dirs);
         TreeBuilder builder = new TreeBuilder(files, options);
 
-        XmlFile startFile = findStart(start, startPath, startIsFile, files, builder);
+        XmlFile startFile = findStart(start, startPath, startIsFile, files, builder, options);
 
         TreeNode tree = builder.build(startFile);
         List<String> warnings = new ArrayList<>(scanner.warnings());
@@ -117,14 +120,15 @@ public final class Main {
     }
 
     private static XmlFile findStart(String start, Path startPath, boolean startIsFile,
-                                     List<XmlFile> files, TreeBuilder builder) {
+                                     List<XmlFile> files, TreeBuilder builder, ScanOptions options) {
         if (startIsFile) {
             Path wanted = startPath.toAbsolutePath().normalize();
             return files.stream()
                     .filter(f -> f.path().toAbsolutePath().normalize().equals(wanted))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException(
-                            "Startdatei liegt nicht in den eingelesenen Verzeichnissen oder ist kein gültiges XML: "
+                            "Startdatei liegt nicht in den eingelesenen Verzeichnissen, hat keine der Endungen "
+                                    + options.extensions() + " oder ist kein gültiges XML: "
                                     + startPath));
         }
         List<XmlFile> hits = builder.lookup(start);

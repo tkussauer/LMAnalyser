@@ -1,6 +1,5 @@
 package de.xmltree;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,18 +12,36 @@ import java.util.stream.Collectors;
  * @param referenceNames   Attribut-/Elementnamen, die Referenzen enthalten; leer bedeutet:
  *                         jeder Attributwert und jeder Elementtext wird als Referenz geprüft
  * @param ignoreCase       Referenzwerte ohne Beachtung der Groß-/Kleinschreibung vergleichen
+ * @param extensions       Dateiendungen der einzulesenden Dateien (ohne Punkt)
  */
 public record ScanOptions(Set<String> idNames, Set<String> descriptionNames,
-                          Set<String> referenceNames, boolean ignoreCase) {
+                          Set<String> referenceNames, boolean ignoreCase, Set<String> extensions) {
+
+    public static final Set<String> DEFAULT_EXTENSIONS = Set.of("cml");
 
     public static ScanOptions defaults() {
-        return new ScanOptions(lower(List.of("id")), lower(List.of("description")), Set.of(), false);
+        return new ScanOptions(Set.of("id"), Set.of("description"), Set.of(), false);
+    }
+
+    public ScanOptions(Set<String> idNames, Set<String> descriptionNames,
+                       Set<String> referenceNames, boolean ignoreCase) {
+        this(idNames, descriptionNames, referenceNames, ignoreCase, DEFAULT_EXTENSIONS);
     }
 
     public ScanOptions {
         idNames = lower(idNames);
         descriptionNames = lower(descriptionNames);
         referenceNames = lower(referenceNames);
+        extensions = lower(extensions.stream().map(e -> e.trim().startsWith(".") ? e.trim().substring(1) : e).toList());
+        if (extensions.isEmpty()) {
+            throw new IllegalArgumentException("Mindestens eine Dateiendung angeben");
+        }
+    }
+
+    /** Prüft, ob der Dateiname eine der konfigurierten Endungen hat. */
+    boolean hasExtension(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        return dot >= 0 && extensions.contains(fileName.substring(dot + 1).toLowerCase(Locale.ROOT));
     }
 
     static Set<String> lower(java.util.Collection<String> names) {

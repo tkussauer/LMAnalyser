@@ -36,9 +36,9 @@ class TreeBuilderTest {
     @Test
     void readsIdAndDescriptionFromAttributesOrChildElements() throws Exception {
         XmlScanner scanner = new XmlScanner(ScanOptions.defaults());
-        XmlFile attr = scanner.scanFile(write("a.xml", "<R ID='1' Description='Eins'/>"));
-        XmlFile elem = scanner.scanFile(write("b.xml", "<R><id>2</id><description>Zwei</description></R>"));
-        XmlFile descOnly = scanner.scanFile(write("c.xml", "<R description='Drei'/>"));
+        XmlFile attr = scanner.scanFile(write("a.cml", "<R ID='1' Description='Eins'/>"));
+        XmlFile elem = scanner.scanFile(write("b.cml", "<R><id>2</id><description>Zwei</description></R>"));
+        XmlFile descOnly = scanner.scanFile(write("c.cml", "<R description='Drei'/>"));
 
         assertEquals("1", attr.id());
         assertEquals("Eins", attr.description());
@@ -53,13 +53,13 @@ class TreeBuilderTest {
 
     @Test
     void resolvesReferencesByIdAndDescription() throws Exception {
-        write("root.xml", "<Vorlage id='V'><a ref='X'/><b>Beschreibung Y</b></Vorlage>");
-        write("x.xml", "<Teil id='X'><c ref='Z'/></Teil>");
-        write("y.xml", "<Teil description='Beschreibung Y'/>");
-        write("z.xml", "<Teil id='Z'/>");
-        write("unused.xml", "<Teil id='U'/>");
+        write("root.cml", "<Vorlage id='V'><a ref='X'/><b>Beschreibung Y</b></Vorlage>");
+        write("x.cml", "<Teil id='X'><c ref='Z'/></Teil>");
+        write("y.cml", "<Teil description='Beschreibung Y'/>");
+        write("z.cml", "<Teil id='Z'/>");
+        write("unused.cml", "<Teil id='U'/>");
 
-        TreeNode root = buildFrom("root.xml", ScanOptions.defaults());
+        TreeNode root = buildFrom("root.cml", ScanOptions.defaults());
 
         assertEquals(2, root.children().size());
         TreeNode x = root.children().get(0);
@@ -72,10 +72,10 @@ class TreeBuilderTest {
 
     @Test
     void stopsAtCycles() throws Exception {
-        write("a.xml", "<R id='A'><x ref='B'/></R>");
-        write("b.xml", "<R id='B'><x ref='A'/></R>");
+        write("a.cml", "<R id='A'><x ref='B'/></R>");
+        write("b.cml", "<R id='B'><x ref='A'/></R>");
 
-        TreeNode root = buildFrom("a.xml", ScanOptions.defaults());
+        TreeNode root = buildFrom("a.cml", ScanOptions.defaults());
 
         TreeNode b = root.children().get(0);
         TreeNode backToA = b.children().get(0);
@@ -85,14 +85,14 @@ class TreeBuilderTest {
 
     @Test
     void reportsUnresolvedOnlyForConfiguredReferenceNames() throws Exception {
-        write("a.xml", "<R id='A'><x ref='B'/><x ref='FEHLT'/><note>Freitext</note></R>");
-        write("b.xml", "<R id='B'/>");
+        write("a.cml", "<R id='A'><x ref='B'/><x ref='FEHLT'/><note>Freitext</note></R>");
+        write("b.cml", "<R id='B'/>");
 
-        TreeNode generic = buildFrom("a.xml", ScanOptions.defaults());
+        TreeNode generic = buildFrom("a.cml", ScanOptions.defaults());
         assertEquals(1, generic.children().size());
 
         ScanOptions restricted = new ScanOptions(Set.of("id"), Set.of("description"), Set.of("ref"), false);
-        TreeNode root = buildFrom("a.xml", restricted);
+        TreeNode root = buildFrom("a.cml", restricted);
         assertEquals(2, root.children().size());
         assertEquals(TreeNode.Status.UNRESOLVED, root.children().get(1).status());
         assertEquals("FEHLT", root.children().get(1).via().value());
@@ -100,22 +100,33 @@ class TreeBuilderTest {
 
     @Test
     void ignoreCaseMatchesDifferentSpelling() throws Exception {
-        write("a.xml", "<R id='A'><x ref='teil b'/></R>");
-        write("b.xml", "<R description='Teil B'/>");
+        write("a.cml", "<R id='A'><x ref='teil b'/></R>");
+        write("b.cml", "<R description='Teil B'/>");
 
-        assertEquals(0, buildFrom("a.xml", ScanOptions.defaults()).children().size());
+        assertEquals(0, buildFrom("a.cml", ScanOptions.defaults()).children().size());
         ScanOptions ignoreCase = new ScanOptions(Set.of("id"), Set.of("description"), Set.of(), true);
-        assertEquals(1, buildFrom("a.xml", ignoreCase).children().size());
+        assertEquals(1, buildFrom("a.cml", ignoreCase).children().size());
+    }
+
+    @Test
+    void readsOnlyConfiguredExtensions() throws Exception {
+        write("a.cml", "<R id='A'><x ref='B'/><x ref='C'/></R>");
+        write("b.cml", "<R id='B'/>");
+        write("c.xml", "<R id='C'/>");
+
+        assertEquals(1, buildFrom("a.cml", ScanOptions.defaults()).children().size());
+        ScanOptions both = new ScanOptions(Set.of("id"), Set.of("description"), Set.of(), false, Set.of("cml", ".XML"));
+        assertEquals(2, buildFrom("a.cml", both).children().size());
     }
 
     @Test
     void rendersEscapedHtml() throws Exception {
-        write("a.xml", "<R id='A' description='&lt;script&gt;'/>");
-        TreeNode root = buildFrom("a.xml", ScanOptions.defaults());
+        write("a.cml", "<R id='A' description='&lt;script&gt;'/>");
+        TreeNode root = buildFrom("a.cml", ScanOptions.defaults());
 
         String html = new HtmlRenderer(dir).render(root, 1, List.of());
         assertTrue(html.contains("&lt;script&gt;"));
         assertTrue(!html.contains("<script>alert"));
-        assertTrue(html.contains("a.xml"));
+        assertTrue(html.contains("a.cml"));
     }
 }
