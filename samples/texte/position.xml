@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Textbaustein id="T-3" description="Positionszeile">
+  <!-- verweist zurück auf die Positionsliste: Zyklus -->
+  <Wiederholung ref="B-20"/>
+</Textbaustein>

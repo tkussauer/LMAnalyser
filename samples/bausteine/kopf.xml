@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Baustein id="B-10" description="Briefkopf">
+  <Text ref="T-1"/>
+  <Text ref="T-2"/>
+</Baustein>

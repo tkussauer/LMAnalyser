@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Vorlage id="V-100" description="Angebot Standard">
+  <Abschnitt ref="B-10"/>
+  <Abschnitt ref="B-20"/>
+  <Abschnitt ref="Fußzeile Standard"/>
+</Vorlage>
