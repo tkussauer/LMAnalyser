@@ -18,14 +18,17 @@ mvn package
 # Startdatei angeben – eingelesen wird deren Verzeichnis (rekursiv)
 java -jar target/xml-tree-viewer-1.0.0.jar --start samples/vorlage-angebot.cml
 
-# Verzeichnis(se) explizit, Start über ID oder Description, eigene Zieldatei
+# Vorlage und referenzierte Dateien liegen in verschiedenen Verzeichnissen
+java -jar target/xml-tree-viewer-1.0.0.jar --start vorlagen/angebot.cml --dir bausteine --dir texte
+
+# Start über ID oder Description statt Pfad, eigene Zieldatei
 java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start V-100 --out angebot.html
 ```
 
 | Option | Bedeutung |
 |---|---|
 | `--start <wert>` | Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht) |
-| `--dir <verz>` | Verzeichnis mit XML-Dateien, rekursiv; mehrfach angebbar. Standard: Verzeichnis der Startdatei |
+| `--dir <verz>` | Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv); mehrfach angebbar. Die Startdatei darf auch außerhalb liegen. Standard: Verzeichnis der Startdatei |
 | `--out <datei>` | Ziel-HTML-Datei, Standard `tree.html` |
 | `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id` |
 | `--desc-names a,b` | Attribut-/Elementnamen der Description, Standard `description` |

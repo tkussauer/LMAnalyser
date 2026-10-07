@@ -1,5 +1,7 @@
 package de.xmltree;
 
+import org.xml.sax.SAXException;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,7 +20,8 @@ public final class Main {
 
             Optionen:
               --start <wert>      Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht)
-              --dir <verz>        Verzeichnis mit CML-/XML-Dateien, rekursiv; mehrfach angebbar
+              --dir <verz>        Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv);
+                                  mehrfach angebbar. Die Startdatei darf auch außerhalb liegen.
                                   (Standard: Verzeichnis der Startdatei bzw. aktuelles Verzeichnis)
               --out <datei>       Ziel-HTML-Datei (Standard: tree.html)
               --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id)
@@ -90,10 +93,23 @@ public final class Main {
 
         ScanOptions options = new ScanOptions(idNames, descNames, refNames, ignoreCase, extensions);
         XmlScanner scanner = new XmlScanner(options);
-        List<XmlFile> files = scanner.scanDirectories(dirs);
+        List<XmlFile> files = new ArrayList<>(scanner.scanDirectories(dirs));
+        if (startIsFile) {
+            // Die Vorlage darf auch außerhalb der Referenzverzeichnisse liegen.
+            Path wanted = startPath.toAbsolutePath().normalize();
+            boolean included = files.stream().anyMatch(f -> f.path().toAbsolutePath().normalize().equals(wanted));
+            if (!included) {
+                try {
+                    files.add(scanner.scanFile(startPath));
+                } catch (IOException | SAXException e) {
+                    throw new IllegalArgumentException("Startdatei nicht lesbar oder kein gültiges XML: "
+                            + startPath + " (" + e.getMessage() + ")");
+                }
+            }
+        }
         TreeBuilder builder = new TreeBuilder(files, options);
 
-        XmlFile startFile = findStart(start, startPath, startIsFile, files, builder, options);
+        XmlFile startFile = findStart(start, startPath, startIsFile, files, builder);
 
         TreeNode tree = builder.build(startFile);
         List<String> warnings = new ArrayList<>(scanner.warnings());
@@ -120,16 +136,13 @@ public final class Main {
     }
 
     private static XmlFile findStart(String start, Path startPath, boolean startIsFile,
-                                     List<XmlFile> files, TreeBuilder builder, ScanOptions options) {
+                                     List<XmlFile> files, TreeBuilder builder) {
         if (startIsFile) {
             Path wanted = startPath.toAbsolutePath().normalize();
             return files.stream()
                     .filter(f -> f.path().toAbsolutePath().normalize().equals(wanted))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Startdatei liegt nicht in den eingelesenen Verzeichnissen, hat keine der Endungen "
-                                    + options.extensions() + " oder ist kein gültiges XML: "
-                                    + startPath));
+                    .orElseThrow();
         }
         List<XmlFile> hits = builder.lookup(start);
         if (hits.isEmpty()) {
