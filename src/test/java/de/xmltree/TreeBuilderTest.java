@@ -143,6 +143,22 @@ class TreeBuilderTest {
     }
 
     @Test
+    void acceptsDocumentAndTextblockAsRootElement() throws Exception {
+        write("vorlage.cml", "<document id='1' description='Vorlage'><textblock textblockID='2'/></document>");
+        write("baustein.cml", "<textblock id='2' description='Baustein'><textblock textblockID='3'/></textblock>");
+        write("unterdokument.cml", "<document documentID='3' description='Unterdokument'/>");
+
+        TreeNode root = buildFrom("vorlage.cml", ScanOptions.defaults());
+
+        assertEquals("document", root.file().rootElement());
+        TreeNode baustein = root.children().get(0);
+        assertEquals("textblock", baustein.file().rootElement());
+        assertEquals("2", baustein.file().id());
+        assertEquals("3", baustein.children().get(0).file().id());
+        assertEquals("document", baustein.children().get(0).file().rootElement());
+    }
+
+    @Test
     void reportsMissingTextblock() throws Exception {
         write("vorlage.cml", "<textblock id='1'><textblock textblockID='404'/></textblock>");
 

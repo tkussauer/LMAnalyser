@@ -18,7 +18,7 @@ public record ScanOptions(Set<String> idNames, Set<String> descriptionNames,
                           Set<String> referenceNames, boolean ignoreCase, Set<String> extensions) {
 
     public static final Set<String> DEFAULT_EXTENSIONS = Set.of("cml");
-    public static final Set<String> DEFAULT_ID_NAMES = Set.of("id", "textblockID");
+    public static final Set<String> DEFAULT_ID_NAMES = Set.of("id", "textblockID", "documentID");
     public static final Set<String> DEFAULT_DESCRIPTION_NAMES = Set.of("description");
     /** Bausteine verweisen per {@code <textblock textblockID="…"/>} auf andere Bausteine. */
     public static final Set<String> DEFAULT_REFERENCE_NAMES = Set.of("textblockID");

@@ -30,7 +30,7 @@ java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start 200000 --out an
 | `--start <wert>` | Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht) |
 | `--dir <verz>` | Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv); mehrfach angebbar. Die Startdatei darf auch außerhalb liegen. Standard: Verzeichnis der Startdatei |
 | `--out <datei>` | Ziel-HTML-Datei, Standard `tree.html` |
-| `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id,textblockID` |
+| `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id,textblockID,documentID` |
 | `--desc-names a,b` | Attribut-/Elementnamen der Description, Standard `description` |
 | `--ref-names a,b` | Attribute/Elemente mit Verweisen, Standard `textblockID`; `*` = alle Werte prüfen |
 | `--ignore-case` | Groß-/Kleinschreibung beim Referenzvergleich ignorieren |
@@ -66,8 +66,9 @@ Gruppen:
 ```
 
 1. Alle `*.cml`-Dateien (bzw. die per `--ext` angegebenen Endungen) werden eingelesen. Am
-   **Root-Element** wird die ID (`id` oder `textblockID`) und die `description` ermittelt –
-   als Attribut oder als direktes Kindelement.
+   **Root-Element** – `<document>` (Vorlage) oder `<textblock>` (Baustein) – wird die ID
+   (`id`, `textblockID` oder `documentID`) und die `description` ermittelt, als Attribut oder als
+   direktes Kindelement.
 2. Daraus entsteht ein Index *ID → Datei* und *Description → Datei*.
 3. Ab der Startdatei wird jeder `textblockID`-Wert im Index gesucht (ID vor Description). Ein
    Treffer wird zum Kindknoten und rekursiv weiter aufgelöst. Werte ohne passende Datei

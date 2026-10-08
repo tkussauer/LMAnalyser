@@ -24,7 +24,7 @@ public final class Main {
                                   mehrfach angebbar. Die Startdatei darf auch außerhalb liegen.
                                   (Standard: Verzeichnis der Startdatei bzw. aktuelles Verzeichnis)
               --out <datei>       Ziel-HTML-Datei (Standard: tree.html)
-              --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id,textblockID)
+              --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id,textblockID,documentID)
               --desc-names <a,b>  Attribut-/Elementnamen der Description (Standard: description)
               --ref-names <a,b>   Attribute/Elemente, die Verweise enthalten (Standard: textblockID).
                                   '*' = jeden Attributwert und Elementtext mit allen IDs/Descriptions vergleichen.

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<textblock id="200000" description="Vorlage Anamnese">
+<document id="200000" description="Vorlage Anamnese">
   <textblock textblockID="200829"/>
   <group description="Formular Diabetes">
     <groupentry name="HL_KO_LE_TXK_GESUNDHEIT_DIABETES" description="Fragebogen Gesundheit Kopf Schwindel" selected="true" optional="true">
@@ -8,4 +8,4 @@
   </group>
   <textblock textblockID="198156"/>
   <textblock textblockID="196888"/>
-</textblock>
+</document>
