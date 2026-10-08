@@ -119,7 +119,7 @@ public final class Main {
         warnings.addAll(builder.warnings());
 
         Path baseDir = dirs.size() == 1 ? dirs.get(0) : null;
-        String html = new HtmlRenderer(baseDir).render(tree, files.size(), warnings);
+        String html = new HtmlRenderer(baseDir, builder::lookup).render(tree, files.size(), warnings);
         try {
             Path parent = out.toAbsolutePath().getParent();
             if (parent != null) {

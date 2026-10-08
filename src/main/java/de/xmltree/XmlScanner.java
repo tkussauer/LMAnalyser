@@ -91,7 +91,8 @@ public class XmlScanner {
 
         List<XmlFile.Candidate> candidates = new ArrayList<>();
         collectCandidates(root, "", ownKeyNodes, candidates);
-        return new XmlFile(path, root.getTagName(), emptyToNull(id), emptyToNull(description), candidates);
+        return new XmlFile(path, root.getTagName(), emptyToNull(id), emptyToNull(description), candidates,
+                LogicParser.parse(root));
     }
 
     /**

@@ -8,7 +8,7 @@ import java.util.List;
  * Werten, die als Referenz auf eine andere Datei in Frage kommen.
  */
 public record XmlFile(Path path, String rootElement, String id, String description,
-                      List<Candidate> candidates) {
+                      List<Candidate> candidates, List<LogicNode> logic) {
 
     /** Ein Wert aus der Datei (Attribut oder Elementtext), der eine Referenz sein kann. */
     public record Candidate(String value, String source) {

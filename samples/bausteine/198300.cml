@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<textblock id="198300" description="Schadendaten übernehmen">
+    <set><variable name="VAR_CC_SELBSTBEHALT" uname="VAR_CC_SELBSTBEHALT" datatype="string"/>
+        <equalTo/>
+        <variable name="system_BFSSchaden.selbstbehalt" uname="system_BFSSchaden.selbstbehalt" datatype="string"/></set>
+    <set><variable name="VAR_CC_SCHADENURSACHE" uname="VAR_CC_SCHADENURSACHE" datatype="string"/>
+        <equalTo/>
+        <variable name="system_BFSSchaden.schadenursache" uname="system_BFSSchaden.schadenursache" datatype="string"/></set>
+    <set><variable name="VAR_CC_EREIGNIS" uname="VAR_CC_EREIGNIS" datatype="string"/>
+        <equalTo/>
+        <variable name="system_BFSSchaden.ereignis" uname="system_BFSSchaden.ereignis" datatype="string"/></set><!--＜textmultipleruleobject callId=100 description=BFSSchaden tforeference=system_BFSSchaden.dienstleister＞-->
+    <iteration description="repeat"
+               name="system_BFSSchaden.dienstleister"><!--call 110--><!--＜textruleobject callId=110 description=Dienstleister-Details executionStrategy=ExecuteFirstMatchedRuleStrategy＞-->
+        <conditions><condition><variable name="system_BFSSchaden.dienstleister.typ" uname="system_BFSSchaden.dienstleister.typ" datatype="string"/><equalTo/><conditionValue>Werkstatt</conditionValue></condition>
+            <then><set><variable name="VAR_CC_WERKSTATTBEAUFTRAGUNG" uname="VAR_CC_WERKSTATTBEAUFTRAGUNG" datatype="string"/><equalTo/><conditionValue>1</conditionValue></set>
+                <set><variable name="VAR_CC_NAME_PWS" uname="VAR_CC_NAME_PWS" datatype="string"/>
+                    <equalTo/>
+                    <variable name="system_BFSSchaden.dienstleister.name" uname="system_BFSSchaden.dienstleister.name"
+                              datatype="string"/></set></then></conditions>
+        <conditions><condition><variable name="system_BFSSchaden.dienstleister.typ" uname="system_BFSSchaden.dienstleister.typ" datatype="string"/><equalTo/><conditionValue>Werkstatt</conditionValue></condition>
+            <then><!--call 120--><!--＜textruleobject callId=120 description=Dienstleisterbeauftragung Werkstatt executionStrategy=ExecuteFirstMatchedRuleStrategy＞-->
+                <set><variable name="VAR_CC_ABHOLSERVICEKOSTENTRAEGER" uname="VAR_CC_ABHOLSERVICEKOSTENTRAEGER" datatype="string"/>
+                    <equalTo/>
+                    <function name="LOOKUP"><const>VH_SD_KR_LUP_DSTL</const>
+                        <variable name="VAR_CC_ABHOLSERVICEVEREINBART" uname="VAR_CC_ABHOLSERVICEVEREINBART"
+                                  datatype="string"/>
+                        <variable name="system_BFSSchaden.dienstleister.abholServiceKostenTraegtVHV"
+                                  uname="system_BFSSchaden.dienstleister.abholServiceKostenTraegtVHV"
+                                  datatype="string"/></function></set><!--END call 120--></then></conditions>
+        <conditions><condition><variable name="system_BFSSchaden.dienstleister.typ" uname="system_BFSSchaden.dienstleister.typ" datatype="string"/><equalTo/><conditionValue>Werkstatt</conditionValue></condition>
+            <or/>
+            <condition><variable name="system_BFSSchaden.dienstleister.typ" uname="system_BFSSchaden.dienstleister.typ" datatype="string"/>
+                <equalTo/>
+                <conditionValue>Mietwagen</conditionValue></condition>
+            <then><!--call 130--><!--＜textruleobject callId=130 description=Dienstleisterbeauftragung außer Werkstatt executionStrategy=ExecuteFirstMatchedRuleStrategy＞-->
+                <conditions><parenthesis><condition><variable name="system_BFSSchaden.dienstleister.hagelReparaturKostenTraegtVHV" uname="system_BFSSchaden.dienstleister.hagelReparaturKostenTraegtVHV" datatype="string"/><equalTo/><conditionValue>1</conditionValue></condition><or/><condition><variable name="system_BFSSchaden.dienstleister.glasReparaturKostenTraegtVHV" uname="system_BFSSchaden.dienstleister.glasReparaturKostenTraegtVHV" datatype="string"/>
+                    <equalTo/>
+                    <conditionValue>1</conditionValue></condition></parenthesis>
+                    <then><set><variable name="VAR_CC_KOSTENUEBERNAHME" uname="VAR_CC_KOSTENUEBERNAHME" datatype="string"/><equalTo/><conditionValue>1</conditionValue></set></then></conditions><!--END call 130--></then></conditions><!--END call 110--></iteration>
+    <set><variable name="VAR_ROLLENID_KUNDE" uname="VAR_ROLLENID_KUNDE" datatype="string"/>
+        <equalTo/>
+        <variable name="system_BFSSchaden.kunde.rollen-ID" uname="system_BFSSchaden.kunde.rollen-ID" datatype="string"/></set><!--call 210--><!--＜textmultipleruleobject callId=210 description=Kunden-Rolle herausfinden tforeference=rollen.rolle＞-->
+    <iteration description="repeat"
+               name="rollen.rolle"><!--call 211--><!--＜textruleobject callId=211 description=Rolle zuweisen executionStrategy=ExecuteFirstMatchedRuleStrategy＞-->
+        <conditions><parenthesis><condition><variable name="VAR_ROLLENID_KUNDE" uname="VAR_ROLLENID_KUNDE" datatype="string"/><equalTo/><variable
+                name="rollen.rolle.rollenId" uname="rollen.rolle.rollenId" datatype="string"/></condition><and/><parenthesis><condition><variable name="rollen.rolle.nachname" uname="rollen.rolle.nachname" datatype="string"/><notEqualTo/><conditionValue/></condition>
+            <or/>
+            <condition><variable name="rollen.rolle.vorname" uname="rollen.rolle.vorname" datatype="string"/>
+                <notEqualTo/>
+                <conditionValue/></condition></parenthesis></parenthesis>
+            <then><set><variable name="VAR_CC_NAME" uname="VAR_CC_NAME" datatype="string"/><equalTo/><cmd
+                    name="SMC_SAVE"
+                    orig="rollen.rolle.vorname | &quot; &quot; | rollen.rolle.nachname"><variable name="rollen.rolle.vorname" uname="rollen.rolle.vorname" datatype="string"/>
+                " "
+                <variable name="rollen.rolle.nachname" uname="rollen.rolle.nachname" datatype="string"/></cmd></set></then></conditions><!--END call 211--></iteration><!--END call 210-->
+</textblock>

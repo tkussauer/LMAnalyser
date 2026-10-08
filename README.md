@@ -79,6 +79,25 @@ Gruppen:
 Mit `--ref-names` lassen sich andere Verweis-Attribute angeben; `--ref-names "*"` vergleicht
 jeden Attributwert und Elementtext mit allen IDs/Descriptions (für unbekannte Formate).
 
+## Regel-Logik anzeigen
+
+Enthält ein Baustein Regeln (`set`, `conditions`, `iteration`, …), erscheint unter dem Knoten
+ein aufklappbarer Eintrag **Logik · 9 Zuweisungen · 5 Bedingungen · 2 Schleifen**. Die Regeln
+werden lesbar dargestellt:
+
+| XML | Anzeige |
+|---|---|
+| `<set><variable name="A"/><equalTo/><variable name="B"/></set>` | `A = B` (aufeinanderfolgende Zuweisungen als Tabelle) |
+| `<conditions>… <then>…</then></conditions>` | **WENN** Bedingung **DANN** … (aufklappbar) |
+| `<and/>`, `<or/>`, `<parenthesis>` | **UND**, **ODER**, `( … )` |
+| `<equalTo/>`, `<notEqualTo/>`, `<conditionValue/>` | `=`, `≠`, `leer` |
+| `<iteration name="X">` | **FÜR JEDES ELEMENT AUS** X |
+| `<function name="LOOKUP">…`, `<cmd name="SMC_SAVE" orig="…">` | `LOOKUP(a, b, c)`, `SMC_SAVE(a \| " " \| b)` |
+| Kommentar `＜textruleobject callId=110 description=…＞` | Überschrift **Regel 110 · …** |
+
+Die Suche findet auch Variablen (z. B. `VAR_CC_NAME`): Die betroffenen Bausteine werden
+angezeigt, ihre Logik aufgeklappt und die passenden Zeilen markiert.
+
 Besonderheiten im Baum:
 
 - **Zyklus** – die Datei liegt bereits auf dem Pfad zur Wurzel und wird nicht erneut aufgelöst.
