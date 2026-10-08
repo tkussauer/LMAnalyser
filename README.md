@@ -108,6 +108,13 @@ Zeile wie *gültig 14-02-2018 bis 31-12-2099 · Eigentümer LEBEN · Release #LE
 Suche auffindbar. Liegt `validTo` in der Vergangenheit, erscheint **abgelaufen**; liegt `validFrom`
 in der Zukunft, **noch nicht gültig**.
 
+## Migration nach Quadient Inspire
+
+Jeder Baustein, der ab der Startvorlage erreichbar ist – auch wenn er nur unter einer Bedingung
+eingebunden wird –, trägt das grüne Kennzeichen **Migration**. Die Kopfzeile nennt die Anzahl
+dieser Bausteine (jede Datei einmal gezählt). Verweist eine ID auf mehrere Dateien, steht dort
+**Migration prüfen**; nicht gefundene Verweise werden nicht markiert.
+
 Besonderheiten im Baum:
 
 - **Zyklus** – die Datei liegt bereits auf dem Pfad zur Wurzel und wird nicht erneut aufgelöst.

@@ -206,6 +206,26 @@ class TreeBuilderTest {
     }
 
     @Test
+    void marksReachableBausteineForMigration() throws Exception {
+        write("v.cml", "<document ID='1'><textblock textblockID='2'/><textblock textblockID='404'/>"
+                + "<conditions><condition><variable name='x'/><equalTo/><conditionValue>1</conditionValue></condition>"
+                + "<then><textblock textblockID='3'/></then></conditions></document>");
+        write("a.cml", "<textblock ID='2'><textblock textblockID='1'/></textblock>");
+        write("b.cml", "<textblock ID='3'/>");
+        write("unbenutzt.cml", "<textblock ID='9'/>");
+
+        TreeNode root = buildFrom("v.cml", ScanOptions.defaults());
+        String html = new HtmlRenderer(dir).render(root, 4, List.of());
+
+        // Vorlage, 2 und der bedingte Baustein 3 – nicht der fehlende 404 und nicht der unbenutzte 9
+        assertEquals(List.of("1", "2", "3"),
+                HtmlRenderer.migrationFiles(root).stream().map(XmlFile::id).toList());
+        assertTrue(html.contains("<span class=\"badge mig\">Migration</span> 3 Bausteine"));
+        // Knoten: Vorlage, 2, Zyklus zurück auf 1, 3 → 4 Kennzeichen im Baum (+ Kopfzeile + Legende)
+        assertEquals(4, html.split("class=\"badge mig\" title=", -1).length - 1);
+    }
+
+    @Test
     void reportsMissingTextblock() throws Exception {
         write("vorlage.cml", "<textblock id='1'><textblock textblockID='404'/></textblock>");
 

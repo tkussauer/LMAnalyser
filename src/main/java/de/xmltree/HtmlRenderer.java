@@ -105,6 +105,8 @@ public class HtmlRenderer {
                 .badge { font-size: 11px; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; }
                 .s-CYCLE .badge { color: var(--cycle); }
                 .badge.cond { color: var(--kw); }
+                .badge.mig { color: var(--ok); }
+                .badge.mig-check { color: var(--amb); }
                 .badge.expired { color: var(--unres); }
                 .node .fmeta { flex-basis: 100%; color: var(--muted); font-size: 12px; cursor: help; }
                 .node .fmeta + .via { flex-basis: 100%; }
@@ -147,7 +149,9 @@ public class HtmlRenderer {
                 """);
         html.append("<div class=\"meta\">Start: <strong>").append(esc(label(root.file())))
                 .append("</strong> · ").append(scannedFiles).append(" Dateien eingelesen · ")
-                .append(root.size()).append(" Knoten · erzeugt ")
+                .append(root.size()).append(" Knoten · ")
+                .append("<span class=\"badge mig\">Migration</span> ").append(migrationFiles(root).size())
+                .append(" Bausteine · erzeugt ")
                 .append(esc(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))))
                 .append("</div>\n");
         html.append("""
@@ -161,6 +165,7 @@ public class HtmlRenderer {
                   <span class="s-AMBIGUOUS"><span class="badge">mehrdeutig</span> Wert passt auf mehrere Dateien</span>
                   <span class="s-UNRESOLVED"><span class="badge">nicht gefunden</span> Referenz ohne passende Datei</span>
                   <span><span class="badge cond">bedingt</span> nur unter einer WENN-Bedingung eingebunden</span>
+                  <span><span class="badge mig">Migration</span> ab der Vorlage erreichbar – für Quadient Inspire berücksichtigen</span>
                 </div>
                 <ul class="tree">
                 """);
@@ -292,6 +297,12 @@ public class HtmlRenderer {
                 html.append("<span class=\"badge cond\" title=\"Wird nur unter einer Bedingung eingebunden\">bedingt</span>");
             }
         }
+        if (file != null) {
+            // Alles, was ab der Vorlage erreichbar ist, muss nach Quadient Inspire migriert werden
+            html.append(node.status() == TreeNode.Status.AMBIGUOUS
+                    ? "<span class=\"badge mig-check\" title=\"Verweis passt auf mehrere Dateien – klären, welche migriert wird\">Migration prüfen</span>"
+                    : "<span class=\"badge mig\" title=\"Ab der Vorlage erreichbar – bei der Migration nach Quadient Inspire berücksichtigen\">Migration</span>");
+        }
         switch (node.status()) {
             case CYCLE -> html.append("<span class=\"badge\">Zyklus</span>");
             case AMBIGUOUS -> html.append("<span class=\"badge\">mehrdeutig</span>");
@@ -367,6 +378,20 @@ public class HtmlRenderer {
         } catch (DateTimeParseException e) {
             return null;
         }
+    }
+
+    /** Alle Dateien, die ab der Vorlage erreichbar sind – jede nur einmal gezählt. */
+    static java.util.Set<XmlFile> migrationFiles(TreeNode root) {
+        java.util.Set<XmlFile> files = new java.util.LinkedHashSet<>();
+        collectFiles(root, files);
+        return files;
+    }
+
+    private static void collectFiles(TreeNode node, java.util.Set<XmlFile> out) {
+        if (node.file() != null) {
+            out.add(node.file());
+        }
+        node.children().forEach(child -> collectFiles(child, out));
     }
 
     /** Nur Verweise und Gruppen zeigt schon der Baum – Logik lohnt sich erst bei Regeln, Text o. Ä. */
