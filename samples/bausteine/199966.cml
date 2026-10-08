@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<textblock id="199966" description="Fragebogen Gesundheit Kopf Schwindel">
+  <group description="Symptome">
+    <groupentry name="HL_SCHWINDEL" description="Schwindel" selected="false" optional="true">
+      <textblock textblockID="199970"/>
+    </groupentry>
+  </group>
+</textblock>

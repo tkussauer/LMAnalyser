@@ -90,11 +90,16 @@ public class XmlScanner {
         }
 
         List<XmlFile.Candidate> candidates = new ArrayList<>();
-        collectCandidates(root, ownKeyNodes, candidates);
+        collectCandidates(root, "", ownKeyNodes, candidates);
         return new XmlFile(path, root.getTagName(), emptyToNull(id), emptyToNull(description), candidates);
     }
 
-    private void collectCandidates(Element element, List<Node> ownKeyNodes, List<XmlFile.Candidate> out) {
+    /**
+     * @param context Pfad der beschrifteten Vorfahren (z. B. Gruppen), damit im Baum sichtbar ist,
+     *                in welcher Gruppe ein Verweis steht
+     */
+    private void collectCandidates(Element element, String context, List<Node> ownKeyNodes,
+                                   List<XmlFile.Candidate> out) {
         NamedNodeMap attributes = element.getAttributes();
         for (int i = 0; i < attributes.getLength(); i++) {
             Attr attr = (Attr) attributes.item(i);
@@ -102,17 +107,35 @@ public class XmlScanner {
                 continue;
             }
             if (!options.restrictsReferences() || options.isReference(attr.getName())) {
-                addCandidate(attr.getValue(), element.getTagName() + "/@" + attr.getName(), out);
+                addCandidate(attr.getValue(), context + element.getTagName() + "/@" + attr.getName(), out);
             }
         }
         List<Element> children = childElements(element);
         if (children.isEmpty() && !ownKeyNodes.contains(element)
                 && (!options.restrictsReferences() || options.isReference(element.getTagName()))) {
-            addCandidate(element.getTextContent(), "<" + element.getTagName() + ">", out);
+            addCandidate(element.getTextContent(), context + "<" + element.getTagName() + ">", out);
+        }
+        String childContext = context;
+        if (element.getParentNode() != element.getOwnerDocument()) {
+            String label = label(element);
+            if (label != null) {
+                childContext = context + label + " › ";
+            }
         }
         for (Element child : children) {
-            collectCandidates(child, ownKeyNodes, out);
+            collectCandidates(child, childContext, ownKeyNodes, out);
         }
+    }
+
+    /** Beschriftung eines Strukturelements, z. B. {@code <group description="…">} oder {@code name="…"}. */
+    private static String label(Element element) {
+        for (String attribute : List.of("description", "name")) {
+            String value = element.getAttribute(attribute).trim();
+            if (!value.isEmpty()) {
+                return element.getTagName() + " „" + value + "“";
+            }
+        }
+        return null;
     }
 
     private static void addCandidate(String value, String source, List<XmlFile.Candidate> out) {

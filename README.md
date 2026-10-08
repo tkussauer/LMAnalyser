@@ -16,13 +16,13 @@ mvn package
 
 ```bash
 # Startdatei angeben – eingelesen wird deren Verzeichnis (rekursiv)
-java -jar target/xml-tree-viewer-1.0.0.jar --start samples/vorlage-angebot.cml
+java -jar target/xml-tree-viewer-1.0.0.jar --start samples/vorlagen/anamnese.cml
 
 # Vorlage und referenzierte Dateien liegen in verschiedenen Verzeichnissen
 java -jar target/xml-tree-viewer-1.0.0.jar --start vorlagen/angebot.cml --dir bausteine --dir texte
 
 # Start über ID oder Description statt Pfad, eigene Zieldatei
-java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start V-100 --out angebot.html
+java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start 200000 --out anamnese.html
 ```
 
 | Option | Bedeutung |
@@ -30,9 +30,9 @@ java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start V-100 --out ang
 | `--start <wert>` | Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht) |
 | `--dir <verz>` | Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv); mehrfach angebbar. Die Startdatei darf auch außerhalb liegen. Standard: Verzeichnis der Startdatei |
 | `--out <datei>` | Ziel-HTML-Datei, Standard `tree.html` |
-| `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id` |
+| `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id,textblockID` |
 | `--desc-names a,b` | Attribut-/Elementnamen der Description, Standard `description` |
-| `--ref-names a,b` | Nur diese Attribute/Elemente als Referenz werten (siehe unten) |
+| `--ref-names a,b` | Attribute/Elemente mit Verweisen, Standard `textblockID`; `*` = alle Werte prüfen |
 | `--ignore-case` | Groß-/Kleinschreibung beim Referenzvergleich ignorieren |
 | `--ext a,b` | Dateiendungen der einzulesenden Dateien, Standard `cml` (z. B. `--ext cml,xml`) |
 
@@ -53,18 +53,30 @@ klicken und anschließend die Argumente wie in Schritt 3 ergänzen.
 
 ## So werden Referenzen aufgelöst
 
-1. Alle `*.cml`-Dateien (bzw. die per `--ext` angegebenen Endungen) werden eingelesen. Am **Root-Element** wird die ID und die Description
-   ermittelt – entweder als Attribut (`<Vorlage id="V-100" description="…">`) oder als direktes
-   Kindelement (`<Vorlage><ID>V-100</ID>…`).
-2. Daraus entsteht ein Index *ID → Datei* und *Description → Datei*.
-3. Ab der Startdatei werden alle Attributwerte und Elementtexte der Datei mit dem Index verglichen.
-   Ein Treffer ist eine Referenz und wird zum Kindknoten. Die ID hat Vorrang vor der Description.
-   Danach wird rekursiv weiter aufgelöst.
+Bausteine verweisen über das Attribut `textblockID` auf andere Bausteine, auch innerhalb von
+Gruppen:
 
-Ohne `--ref-names` wird *jeder* Wert geprüft, so dass kein bestimmtes Referenzformat
-vorausgesetzt wird. Ist bekannt, in welchen Attributen bzw. Elementen die Referenzen stehen
-(z. B. `--ref-names ref,Verweis`), werden nur diese ausgewertet; Werte ohne passende Datei
-erscheinen dann als **nicht gefunden** im Baum.
+```xml
+<textblock textblockID="200829"/>
+<group description="Formular Diabetes">
+  <groupentry name="HL_KO_LE_TXK_GESUNDHEIT_DIABETES" description="Fragebogen Gesundheit Kopf Schwindel">
+    <textblock textblockID="199966"/>
+  </groupentry>
+</group>
+```
+
+1. Alle `*.cml`-Dateien (bzw. die per `--ext` angegebenen Endungen) werden eingelesen. Am
+   **Root-Element** wird die ID (`id` oder `textblockID`) und die `description` ermittelt –
+   als Attribut oder als direktes Kindelement.
+2. Daraus entsteht ein Index *ID → Datei* und *Description → Datei*.
+3. Ab der Startdatei wird jeder `textblockID`-Wert im Index gesucht (ID vor Description). Ein
+   Treffer wird zum Kindknoten und rekursiv weiter aufgelöst. Werte ohne passende Datei
+   erscheinen als **nicht gefunden**.
+4. Steht ein Verweis in einer Gruppe, zeigt der Knoten den Weg dorthin an, z. B.
+   *über group „Formular Diabetes“ › groupentry „Fragebogen …“ › textblock/@textblockID*.
+
+Mit `--ref-names` lassen sich andere Verweis-Attribute angeben; `--ref-names "*"` vergleicht
+jeden Attributwert und Elementtext mit allen IDs/Descriptions (für unbekannte Formate).
 
 Besonderheiten im Baum:
 
@@ -78,8 +90,8 @@ DTDs und externe Entities werden beim Parsen nicht aufgelöst.
 
 ## Beispiel
 
-Unter `samples/` liegt eine kleine Vorlagenstruktur mit Zyklus und fehlender Referenz:
+Unter `samples/` liegt eine Vorlage im echten Format mit Gruppe, Zyklus und fehlendem Baustein:
 
 ```bash
-java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start V-100 --ref-names ref,Verweis
+java -jar target/xml-tree-viewer-1.0.0.jar --start samples/vorlagen/anamnese.cml --dir samples/bausteine
 ```

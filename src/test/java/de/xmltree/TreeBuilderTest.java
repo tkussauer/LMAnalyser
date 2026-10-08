@@ -59,7 +59,7 @@ class TreeBuilderTest {
         write("z.cml", "<Teil id='Z'/>");
         write("unused.cml", "<Teil id='U'/>");
 
-        TreeNode root = buildFrom("root.cml", ScanOptions.defaults());
+        TreeNode root = buildFrom("root.cml", ScanOptions.anyValueAsReference());
 
         assertEquals(2, root.children().size());
         TreeNode x = root.children().get(0);
@@ -75,7 +75,7 @@ class TreeBuilderTest {
         write("a.cml", "<R id='A'><x ref='B'/></R>");
         write("b.cml", "<R id='B'><x ref='A'/></R>");
 
-        TreeNode root = buildFrom("a.cml", ScanOptions.defaults());
+        TreeNode root = buildFrom("a.cml", ScanOptions.anyValueAsReference());
 
         TreeNode b = root.children().get(0);
         TreeNode backToA = b.children().get(0);
@@ -88,7 +88,7 @@ class TreeBuilderTest {
         write("a.cml", "<R id='A'><x ref='B'/><x ref='FEHLT'/><note>Freitext</note></R>");
         write("b.cml", "<R id='B'/>");
 
-        TreeNode generic = buildFrom("a.cml", ScanOptions.defaults());
+        TreeNode generic = buildFrom("a.cml", ScanOptions.anyValueAsReference());
         assertEquals(1, generic.children().size());
 
         ScanOptions restricted = new ScanOptions(Set.of("id"), Set.of("description"), Set.of("ref"), false);
@@ -103,7 +103,7 @@ class TreeBuilderTest {
         write("a.cml", "<R id='A'><x ref='teil b'/></R>");
         write("b.cml", "<R description='Teil B'/>");
 
-        assertEquals(0, buildFrom("a.cml", ScanOptions.defaults()).children().size());
+        assertEquals(0, buildFrom("a.cml", ScanOptions.anyValueAsReference()).children().size());
         ScanOptions ignoreCase = new ScanOptions(Set.of("id"), Set.of("description"), Set.of(), true);
         assertEquals(1, buildFrom("a.cml", ignoreCase).children().size());
     }
@@ -114,15 +114,48 @@ class TreeBuilderTest {
         write("b.cml", "<R id='B'/>");
         write("c.xml", "<R id='C'/>");
 
-        assertEquals(1, buildFrom("a.cml", ScanOptions.defaults()).children().size());
+        assertEquals(1, buildFrom("a.cml", ScanOptions.anyValueAsReference()).children().size());
         ScanOptions both = new ScanOptions(Set.of("id"), Set.of("description"), Set.of(), false, Set.of("cml", ".XML"));
         assertEquals(2, buildFrom("a.cml", both).children().size());
     }
 
     @Test
+    void resolvesTextblockReferencesInsideGroups() throws Exception {
+        write("vorlage.cml", "<textblock id='100' description='Vorlage'>"
+                + "<textblock textblockID='200829'/>"
+                + "<group description='Formular Diabetes'>"
+                + "<groupentry name='HL_KO_LE_TXK_GESUNDHEIT_DIABETES' description='Fragebogen Gesundheit'"
+                + " selected='true' optional='true'><textblock textblockID='199966'/></groupentry>"
+                + "</group>"
+                + "<textblock textblockID='198156'/>"
+                + "</textblock>");
+        write("a.cml", "<textblock id='200829' description='Kopf'/>");
+        write("b.cml", "<textblock id='199966' description='Formular Diabetes'/>");
+        write("c.cml", "<textblock id='198156' description='Fuß'/>");
+
+        TreeNode root = buildFrom("vorlage.cml", ScanOptions.defaults());
+
+        // Gruppen-Beschreibungen sind keine Verweise, auch wenn sie einer Description entsprechen
+        assertEquals(List.of("200829", "199966", "198156"),
+                root.children().stream().map(n -> n.file().id()).toList());
+        assertEquals("group „Formular Diabetes“ › groupentry „Fragebogen Gesundheit“ › textblock/@textblockID",
+                root.children().get(1).via().source());
+    }
+
+    @Test
+    void reportsMissingTextblock() throws Exception {
+        write("vorlage.cml", "<textblock id='1'><textblock textblockID='404'/></textblock>");
+
+        TreeNode root = buildFrom("vorlage.cml", ScanOptions.defaults());
+
+        assertEquals(TreeNode.Status.UNRESOLVED, root.children().get(0).status());
+        assertEquals("404", root.children().get(0).via().value());
+    }
+
+    @Test
     void rendersEscapedHtml() throws Exception {
         write("a.cml", "<R id='A' description='&lt;script&gt;'/>");
-        TreeNode root = buildFrom("a.cml", ScanOptions.defaults());
+        TreeNode root = buildFrom("a.cml", ScanOptions.anyValueAsReference());
 
         String html = new HtmlRenderer(dir).render(root, 1, List.of());
         assertTrue(html.contains("&lt;script&gt;"));

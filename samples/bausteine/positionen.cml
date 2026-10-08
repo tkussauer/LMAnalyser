@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Baustein>
-  <ID>B-20</ID>
-  <Description>Positionsliste</Description>
-  <Inhalt>
-    <Verweis>T-3</Verweis>
-    <Verweis>T-99</Verweis>
-  </Inhalt>
-</Baustein>

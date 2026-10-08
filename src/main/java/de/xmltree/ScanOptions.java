@@ -18,9 +18,18 @@ public record ScanOptions(Set<String> idNames, Set<String> descriptionNames,
                           Set<String> referenceNames, boolean ignoreCase, Set<String> extensions) {
 
     public static final Set<String> DEFAULT_EXTENSIONS = Set.of("cml");
+    public static final Set<String> DEFAULT_ID_NAMES = Set.of("id", "textblockID");
+    public static final Set<String> DEFAULT_DESCRIPTION_NAMES = Set.of("description");
+    /** Bausteine verweisen per {@code <textblock textblockID="…"/>} auf andere Bausteine. */
+    public static final Set<String> DEFAULT_REFERENCE_NAMES = Set.of("textblockID");
 
     public static ScanOptions defaults() {
-        return new ScanOptions(Set.of("id"), Set.of("description"), Set.of(), false);
+        return new ScanOptions(DEFAULT_ID_NAMES, DEFAULT_DESCRIPTION_NAMES, DEFAULT_REFERENCE_NAMES, false);
+    }
+
+    /** Wie {@link #defaults()}, aber jeder Attributwert und Elementtext gilt als möglicher Verweis. */
+    public static ScanOptions anyValueAsReference() {
+        return new ScanOptions(DEFAULT_ID_NAMES, DEFAULT_DESCRIPTION_NAMES, Set.of(), false);
     }
 
     public ScanOptions(Set<String> idNames, Set<String> descriptionNames,

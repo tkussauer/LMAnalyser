@@ -24,10 +24,10 @@ public final class Main {
                                   mehrfach angebbar. Die Startdatei darf auch außerhalb liegen.
                                   (Standard: Verzeichnis der Startdatei bzw. aktuelles Verzeichnis)
               --out <datei>       Ziel-HTML-Datei (Standard: tree.html)
-              --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id)
+              --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id,textblockID)
               --desc-names <a,b>  Attribut-/Elementnamen der Description (Standard: description)
-              --ref-names <a,b>   Nur diese Attribute/Elemente als Referenz werten. Ohne Angabe wird
-                                  jeder Attributwert und Elementtext mit allen IDs/Descriptions verglichen.
+              --ref-names <a,b>   Attribute/Elemente, die Verweise enthalten (Standard: textblockID).
+                                  '*' = jeden Attributwert und Elementtext mit allen IDs/Descriptions vergleichen.
               --ignore-case       Groß-/Kleinschreibung beim Referenzvergleich ignorieren
               --ext <a,b>         Dateiendungen der einzulesenden Dateien (Standard: cml), z. B. cml,xml
               -h, --help          Diese Hilfe
@@ -51,9 +51,9 @@ public final class Main {
         String start = null;
         Path out = Path.of("tree.html");
         List<Path> dirs = new ArrayList<>();
-        Set<String> idNames = Set.of("id");
-        Set<String> descNames = Set.of("description");
-        Set<String> refNames = Set.of();
+        Set<String> idNames = ScanOptions.DEFAULT_ID_NAMES;
+        Set<String> descNames = ScanOptions.DEFAULT_DESCRIPTION_NAMES;
+        Set<String> refNames = ScanOptions.DEFAULT_REFERENCE_NAMES;
         boolean ignoreCase = false;
         Set<String> extensions = ScanOptions.DEFAULT_EXTENSIONS;
 
@@ -69,7 +69,10 @@ public final class Main {
                 case "--out" -> out = Path.of(next(args, ++i, arg));
                 case "--id-names" -> idNames = names(next(args, ++i, arg));
                 case "--desc-names" -> descNames = names(next(args, ++i, arg));
-                case "--ref-names" -> refNames = names(next(args, ++i, arg));
+                case "--ref-names" -> {
+                    String value = next(args, ++i, arg);
+                    refNames = value.trim().equals("*") ? Set.of() : names(value);
+                }
                 case "--ignore-case" -> ignoreCase = true;
                 case "--ext" -> extensions = names(next(args, ++i, arg));
                 default -> throw new IllegalArgumentException("Unbekannte Option: " + arg);

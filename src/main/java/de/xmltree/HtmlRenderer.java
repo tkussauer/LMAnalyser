@@ -60,7 +60,8 @@ public class HtmlRenderer {
                 details[open] > summary::before { content: "▾"; }
                 .leaf::before { content: "•"; display: inline-block; width: 14px; color: var(--muted); }
                 .node { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
-                        padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+                        padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--card);
+                        max-width: calc(100% - 18px); vertical-align: top; }
                 .root-el { font-family: ui-monospace, Consolas, monospace; color: var(--accent); }
                 .lbl { color: var(--muted); font-size: 12px; }
                 .val { font-weight: 600; }
@@ -204,7 +205,8 @@ public class HtmlRenderer {
         if (baseDir != null && abs.startsWith(baseDir)) {
             return baseDir.relativize(abs).toString().replace('\\', '/');
         }
-        return abs.toString();
+        // Außerhalb des Basisverzeichnisses nur den Dateinamen zeigen, der volle Pfad steht im Tooltip
+        return abs.getFileName().toString();
     }
 
     private static String label(XmlFile file) {

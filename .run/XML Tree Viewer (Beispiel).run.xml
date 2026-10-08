@@ -2,7 +2,7 @@
   <configuration default="false" name="XML Tree Viewer (Beispiel)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="de.xmltree.Main" />
     <module name="xml-tree-viewer" />
-    <option name="PROGRAM_PARAMETERS" value="--start samples/vorlage-angebot.cml --dir samples --ref-names ref,Verweis --out target/tree.html" />
+    <option name="PROGRAM_PARAMETERS" value="--start samples/vorlagen/anamnese.cml --dir samples/bausteine --out target/tree.html" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <method v="2">
       <option name="Make" enabled="true" />
