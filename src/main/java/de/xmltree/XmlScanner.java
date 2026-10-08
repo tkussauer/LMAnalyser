@@ -17,7 +17,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /** Liest XML-Dateien ein und ermittelt ID, Description und Referenzkandidaten. */
@@ -92,7 +94,7 @@ public class XmlScanner {
         List<XmlFile.Candidate> candidates = new ArrayList<>();
         collectCandidates(root, "", ownKeyNodes, candidates);
         return new XmlFile(path, root.getTagName(), emptyToNull(id), emptyToNull(description), candidates,
-                LogicParser.parse(root));
+                LogicParser.parse(root), readMeta(root));
     }
 
     /**
@@ -138,6 +140,25 @@ public class XmlScanner {
             }
             collectCandidates(child, nested, ownKeyNodes, out);
         }
+    }
+
+    /** Liest {@code <meta><generic><entry name="…" val="…"/></generic></meta>} unterhalb des Root-Elements. */
+    private static Map<String, String> readMeta(Element root) {
+        Map<String, String> meta = new LinkedHashMap<>();
+        for (Element child : childElements(root)) {
+            if (!ScanOptions.localName(child.getTagName()).equals("meta")) {
+                continue;
+            }
+            NodeList entries = child.getElementsByTagName("entry");
+            for (int i = 0; i < entries.getLength(); i++) {
+                Element entry = (Element) entries.item(i);
+                String name = entry.getAttribute("name").trim();
+                if (!name.isEmpty()) {
+                    meta.putIfAbsent(name, entry.getAttribute("val"));
+                }
+            }
+        }
+        return meta;
     }
 
     /** Kennzeichnet im Verweisweg eine Bedingung, unter der der Verweis greift. */

@@ -1,8 +1,11 @@
 package de.xmltree;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,12 +17,15 @@ import java.util.regex.Pattern;
 public class HtmlRenderer {
 
     private static final Pattern QUOTED = Pattern.compile("&quot;(.*?)&quot;");
+    private static final DateTimeFormatter META_DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final Pattern KEYWORD = Pattern.compile("\\b(UND|ODER|NICHT)\\b");
 
     private final Path baseDir;
     private final Function<String, List<XmlFile>> lookup;
     /** Dateien mit Regel-Logik und die Nummer ihres Templates in der Seite. */
     private final Map<XmlFile, Integer> logicIds = new LinkedHashMap<>();
+    /** Stichtag für die Prüfung von validFrom/validTo. */
+    private LocalDate today = LocalDate.now();
 
     /** @param baseDir Pfade werden relativ hierzu angezeigt; {@code null} für absolute Pfade. */
     public HtmlRenderer(Path baseDir) {
@@ -33,6 +39,12 @@ public class HtmlRenderer {
     public HtmlRenderer(Path baseDir, Function<String, List<XmlFile>> lookup) {
         this.baseDir = baseDir == null ? null : baseDir.toAbsolutePath().normalize();
         this.lookup = lookup;
+    }
+
+    /** Stichtag für die Gültigkeitsprüfung festlegen (Standard: heute). */
+    public HtmlRenderer today(LocalDate date) {
+        this.today = date;
+        return this;
     }
 
     public String render(TreeNode root, int scannedFiles, List<String> warnings) {
@@ -93,6 +105,9 @@ public class HtmlRenderer {
                 .badge { font-size: 11px; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; }
                 .s-CYCLE .badge { color: var(--cycle); }
                 .badge.cond { color: var(--kw); }
+                .badge.expired { color: var(--unres); }
+                .node .fmeta { flex-basis: 100%; color: var(--muted); font-size: 12px; cursor: help; }
+                .node .fmeta + .via { flex-basis: 100%; }
                 .s-AMBIGUOUS .badge { color: var(--amb); }
                 .s-UNRESOLVED .badge { color: var(--unres); }
                 .s-UNRESOLVED .node { border-style: dashed; }
@@ -239,7 +254,8 @@ public class HtmlRenderer {
         XmlFile file = node.file();
         String search = file == null
                 ? node.via().value()
-                : String.join(" ", nz(file.id()), nz(file.description()), file.rootElement(), relative(file.path()));
+                : String.join(" ", nz(file.id()), nz(file.description()), file.rootElement(), relative(file.path()),
+                        String.join(" ", file.meta().values()));
         Integer logicId = null;
         if (file != null && hasRules(file)) {
             logicId = logicIds.computeIfAbsent(file, f -> logicIds.size());
@@ -268,6 +284,7 @@ public class HtmlRenderer {
             html.append("<span><span class=\"lbl\">Description</span> ").append(value(file.description())).append("</span>");
             html.append("<span class=\"file\" title=\"").append(esc(file.path().toAbsolutePath().toString()))
                     .append("\">").append(esc(relative(file.path()))).append("</span>");
+            renderMeta(file, html);
         }
         if (node.via() != null) {
             html.append("<span class=\"via\">über ").append(via(node.via().source())).append("</span>");
@@ -297,6 +314,59 @@ public class HtmlRenderer {
             html.append("</ul></details>");
         }
         html.append("</li>\n");
+    }
+
+    /**
+     * Zeile mit Gültigkeit, Eigentümer, Release und letzter Änderung; alle Meta-Einträge im Tooltip.
+     * Abgelaufene oder noch nicht gültige Bausteine werden gekennzeichnet.
+     */
+    private void renderMeta(XmlFile file, StringBuilder html) {
+        if (file.meta().isEmpty()) {
+            return;
+        }
+        List<String> parts = new ArrayList<>();
+        String from = file.meta("validFrom");
+        String to = file.meta("validTo");
+        if (from != null || to != null) {
+            parts.add("gültig " + (from != null ? from : "…") + " bis " + (to != null ? to : "…"));
+        }
+        if (file.meta("owner") != null) {
+            parts.add("Eigentümer " + file.meta("owner"));
+        }
+        if (file.meta("releaseName") != null) {
+            parts.add("Release " + file.meta("releaseName"));
+        }
+        if (file.meta("modificationDate") != null) {
+            parts.add("geändert " + file.meta("modificationDate")
+                    + (file.meta("modificationUser") != null ? " von " + file.meta("modificationUser") : ""));
+        }
+        StringBuilder tooltip = new StringBuilder();
+        file.meta().forEach((name, value) -> {
+            if (!value.isBlank()) {
+                tooltip.append(name).append(": ").append(value.trim()).append('\n');
+            }
+        });
+        html.append("<span class=\"fmeta\" title=\"").append(esc(tooltip.toString().trim())).append("\">")
+                .append(esc(parts.isEmpty() ? "Meta-Angaben" : String.join(" · ", parts)));
+        LocalDate validFrom = parseDate(from);
+        LocalDate validTo = parseDate(to);
+        if (validTo != null && validTo.isBefore(today)) {
+            html.append(" <span class=\"badge expired\">abgelaufen</span>");
+        } else if (validFrom != null && validFrom.isAfter(today)) {
+            html.append(" <span class=\"badge expired\">noch nicht gültig</span>");
+        }
+        html.append("</span>");
+    }
+
+    private static LocalDate parseDate(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value.length() > 10 ? value.substring(0, 10) : value, META_DATE);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
     }
 
     /** Nur Verweise und Gruppen zeigt schon der Baum – Logik lohnt sich erst bei Regeln, Text o. Ä. */

@@ -186,6 +186,26 @@ class TreeBuilderTest {
     }
 
     @Test
+    void readsMetaAndMarksExpiredBausteine() throws Exception {
+        write("v.cml", "<textblock ID='1' Description='Vorlage'><meta><generic>"
+                + "<entry name='owner' val='LEBEN'/><entry name='releaseName' val='#LEBEN-P2-SBU'/>"
+                + "<entry name='validFrom' val='14-02-2018'/><entry name='validTo' val='31-12-2099'/>"
+                + "<entry name='modificationUser' val='A10812'/><entry name='modificationDate' val='23-08-2024 10:42:43'/>"
+                + "</generic></meta><textblock textblockID='2'/></textblock>");
+        write("alt.cml", "<textblock ID='2'><meta><generic><entry name='validFrom' val='01-01-2010'/>"
+                + "<entry name='validTo' val='31-12-2019'/></generic></meta></textblock>");
+
+        TreeNode root = buildFrom("v.cml", ScanOptions.defaults());
+        assertEquals("LEBEN", root.file().meta("owner"));
+        assertEquals("31-12-2099", root.file().meta("validTo"));
+
+        String html = new HtmlRenderer(dir).today(java.time.LocalDate.of(2026, 10, 8)).render(root, 2, List.of());
+        assertTrue(html.contains("gültig 14-02-2018 bis 31-12-2099 · Eigentümer LEBEN · Release #LEBEN-P2-SBU"
+                + " · geändert 23-08-2024 10:42:43 von A10812"));
+        assertEquals(1, html.split("badge expired\">abgelaufen", -1).length - 1, "nur der Baustein bis 2019 ist abgelaufen");
+    }
+
+    @Test
     void reportsMissingTextblock() throws Exception {
         write("vorlage.cml", "<textblock id='1'><textblock textblockID='404'/></textblock>");
 

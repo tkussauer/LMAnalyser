@@ -100,6 +100,14 @@ werden lesbar dargestellt:
 Die Suche findet auch Variablen (z. B. `VAR_CC_NAME`): Die betroffenen Bausteine werden
 angezeigt, ihre Logik aufgeklappt und die passenden Zeilen markiert.
 
+## Meta-Angaben
+
+Aus dem Block `<meta><generic><entry name="…" val="…"/></generic></meta>` zeigt jeder Knoten eine
+Zeile wie *gültig 14-02-2018 bis 31-12-2099 · Eigentümer LEBEN · Release #LEBEN-P2-SBU · geändert
+23-08-2024 10:42:43 von A10812*. Alle Meta-Einträge stehen im Tooltip der Zeile und sind über die
+Suche auffindbar. Liegt `validTo` in der Vergangenheit, erscheint **abgelaufen**; liegt `validFrom`
+in der Zukunft, **noch nicht gültig**.
+
 Besonderheiten im Baum:
 
 - **Zyklus** – die Datei liegt bereits auf dem Pfad zur Wurzel und wird nicht erneut aufgelöst.
