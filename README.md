@@ -73,8 +73,10 @@ Gruppen:
 3. Ab der Startdatei wird jeder `textblockID`-Wert im Index gesucht (ID vor Description). Ein
    Treffer wird zum Kindknoten und rekursiv weiter aufgelöst. Werte ohne passende Datei
    erscheinen als **nicht gefunden**.
-4. Steht ein Verweis in einer Gruppe, zeigt der Knoten den Weg dorthin an, z. B.
-   *über group „Formular Diabetes“ › groupentry „Fragebogen …“ › textblock/@textblockID*.
+4. Steht ein Verweis in einer Gruppe, Bedingung oder Schleife, zeigt der Knoten den Weg dorthin
+   an, z. B. *über **WENN** (angebotstyp = "Triple" **UND** sbuVor202001 = "0") › group
+   „Tarifauswahl …“ › groupentry „Hinweis …“ › textblock/@textblockID*. Bausteine, die nur unter
+   einer Bedingung eingebunden werden, tragen das Kennzeichen **bedingt**.
 
 Mit `--ref-names` lassen sich andere Verweis-Attribute angeben; `--ref-names "*"` vergleicht
 jeden Attributwert und Elementtext mit allen IDs/Descriptions (für unbekannte Formate).

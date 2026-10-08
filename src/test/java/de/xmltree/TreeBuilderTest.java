@@ -159,6 +159,33 @@ class TreeBuilderTest {
     }
 
     @Test
+    void referencePathContainsConditions() throws Exception {
+        write("v.cml", "<textblock ID='1' Description='Tarifauswahl'><meta><generic>"
+                + "<entry name='description' val='x'/></generic></meta><!--DOPiX logic keyword: ignore-->"
+                + "<conditions><parenthesis><condition><variable name='Doku.angebotstyp'/><equalTo/>"
+                + "<conditionValue>Triple</conditionValue></condition><and/><condition>"
+                + "<variable name='Doku.sbuVor202001'/><equalTo/><conditionValue>0</conditionValue></condition>"
+                + "</parenthesis><then><group description='Tarifauswahl SBU'><groupentry name='HL_X' description='Hinweis'>"
+                + "<textblock textblockID='2'/></groupentry></group></then>"
+                + "<else><textblock textblockID='3'/></else></conditions>"
+                + "<textblock textblockID='4'/></textblock>");
+        write("a.cml", "<textblock ID='2'/>");
+        write("b.cml", "<textblock ID='3'/>");
+        write("c.cml", "<textblock ID='4'/>");
+
+        TreeNode root = buildFrom("v.cml", ScanOptions.defaults());
+
+        assertEquals("WENN (Doku.angebotstyp = \"Triple\" UND Doku.sbuVor202001 = \"0\") › group „Tarifauswahl SBU“"
+                + " › groupentry „Hinweis“ › textblock/@textblockID", root.children().get(0).via().source());
+        assertEquals("WENN NICHT ((Doku.angebotstyp = \"Triple\" UND Doku.sbuVor202001 = \"0\")) › textblock/@textblockID",
+                root.children().get(1).via().source());
+        assertEquals("textblock/@textblockID", root.children().get(2).via().source());
+        // <meta> und der DOPiX-Steuerkommentar sind keine Logik
+        assertEquals(List.of(LogicNode.Kind.IF, LogicNode.Kind.REF),
+                root.file().logic().stream().map(LogicNode::kind).toList());
+    }
+
+    @Test
     void reportsMissingTextblock() throws Exception {
         write("vorlage.cml", "<textblock id='1'><textblock textblockID='404'/></textblock>");
 

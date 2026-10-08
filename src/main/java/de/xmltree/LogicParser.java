@@ -43,6 +43,8 @@ final class LogicParser {
             "[＜<]\\s*(text(?:multiple)?ruleobject)\\s+(.*?)[＞>]?\\s*$", Pattern.DOTALL);
     private static final Pattern RULE_ATTRIBUTE = Pattern.compile("(\\w+)=(.*?)(?=\\s+\\w+=|$)", Pattern.DOTALL);
     private static final Pattern CALL_MARKER = Pattern.compile("(?i)\\s*(END\\s+)?call\\s+\\d+\\s*");
+    /** Steuerkommentare des Editors, z. B. „DOPiX logic keyword: ignore“. */
+    private static final Pattern IGNORED_COMMENT = Pattern.compile("(?is)\\s*DOPiX logic keyword:.*");
 
     private LogicParser() {
     }
@@ -87,7 +89,6 @@ final class LogicParser {
                 return LogicNode.leaf(LogicNode.Kind.SET, sequence(parts), null);
             }
             case "conditions": {
-                List<Element> condition = new ArrayList<>();
                 List<LogicNode> body = new ArrayList<>();
                 for (Element child : elements(element)) {
                     String childTag = local(child.getTagName());
@@ -95,12 +96,13 @@ final class LogicParser {
                         body.addAll(children(child));
                     } else if (childTag.equals("else")) {
                         body.add(new LogicNode(LogicNode.Kind.ELSE, "SONST", null, children(child)));
-                    } else {
-                        condition.add(child);
                     }
                 }
-                return new LogicNode(LogicNode.Kind.IF, sequence(condition), null, body);
+                return new LogicNode(LogicNode.Kind.IF, condition(element), null, body);
             }
+            case "meta":
+                // Verwaltungsdaten (Autor, Version, Gültigkeit …) gehören nicht zur Logik
+                return null;
             case "iteration": {
                 String description = element.getAttribute("description");
                 return new LogicNode(LogicNode.Kind.ITERATION, element.getAttribute("name"),
@@ -142,7 +144,7 @@ final class LogicParser {
 
     /** Regel-Kommentare werden zu Überschriften, „call 110“/„END call 110“ entfallen. */
     static LogicNode comment(String data) {
-        if (CALL_MARKER.matcher(data).matches()) {
+        if (CALL_MARKER.matcher(data).matches() || IGNORED_COMMENT.matcher(data).matches()) {
             return null;
         }
         Matcher rule = RULE_COMMENT.matcher(data.trim());
@@ -166,6 +168,18 @@ final class LogicParser {
         }
         String text = normalize(data);
         return text.isEmpty() ? null : LogicNode.leaf(LogicNode.Kind.LABEL, text, null);
+    }
+
+    /** Die Bedingung eines {@code <conditions>}-Elements, also alles außer {@code <then>}/{@code <else>}. */
+    static String condition(Element conditions) {
+        List<Element> parts = new ArrayList<>();
+        for (Element child : elements(conditions)) {
+            String tag = local(child.getTagName());
+            if (!tag.equals("then") && !tag.equals("else")) {
+                parts.add(child);
+            }
+        }
+        return sequence(parts);
     }
 
     /** Formatiert ein Ausdruckselement, z. B. eine Variable, einen Wert oder eine Funktion. */

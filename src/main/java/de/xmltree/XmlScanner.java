@@ -123,13 +123,34 @@ public class XmlScanner {
                 childContext = context + label + " › ";
             }
         }
+        boolean isConditions = ScanOptions.localName(element.getTagName()).equals("conditions");
+        String condition = isConditions ? LogicParser.condition(element) : null;
         for (Element child : children) {
-            collectCandidates(child, childContext, ownKeyNodes, out);
+            String nested = childContext;
+            if (isConditions) {
+                // Verweise in <then>/<else> greifen nur unter dieser Bedingung
+                String tag = ScanOptions.localName(child.getTagName());
+                if (tag.equals("then")) {
+                    nested = context + CONDITION_PREFIX + condition + " › ";
+                } else if (tag.equals("else")) {
+                    nested = context + CONDITION_PREFIX + "NICHT (" + condition + ") › ";
+                }
+            }
+            collectCandidates(child, nested, ownKeyNodes, out);
         }
     }
 
+    /** Kennzeichnet im Verweisweg eine Bedingung, unter der der Verweis greift. */
+    static final String CONDITION_PREFIX = "WENN ";
+
     /** Beschriftung eines Strukturelements, z. B. {@code <group description="…">} oder {@code name="…"}. */
     private static String label(Element element) {
+        if (ScanOptions.localName(element.getTagName()).equals("iteration")) {
+            return "FÜR JEDES " + element.getAttribute("name");
+        }
+        if (ScanOptions.localName(element.getTagName()).equals("meta")) {
+            return null;
+        }
         for (String attribute : List.of("description", "name")) {
             String value = element.getAttribute(attribute).trim();
             if (!value.isEmpty()) {

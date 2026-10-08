@@ -92,6 +92,7 @@ public class HtmlRenderer {
                 .via { color: var(--muted); font-size: 12px; }
                 .badge { font-size: 11px; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; }
                 .s-CYCLE .badge { color: var(--cycle); }
+                .badge.cond { color: var(--kw); }
                 .s-AMBIGUOUS .badge { color: var(--amb); }
                 .s-UNRESOLVED .badge { color: var(--unres); }
                 .s-UNRESOLVED .node { border-style: dashed; }
@@ -144,6 +145,7 @@ public class HtmlRenderer {
                   <span class="s-CYCLE"><span class="badge">Zyklus</span> bereits auf dem Pfad, nicht weiter aufgelöst</span>
                   <span class="s-AMBIGUOUS"><span class="badge">mehrdeutig</span> Wert passt auf mehrere Dateien</span>
                   <span class="s-UNRESOLVED"><span class="badge">nicht gefunden</span> Referenz ohne passende Datei</span>
+                  <span><span class="badge cond">bedingt</span> nur unter einer WENN-Bedingung eingebunden</span>
                 </div>
                 <ul class="tree">
                 """);
@@ -268,7 +270,10 @@ public class HtmlRenderer {
                     .append("\">").append(esc(relative(file.path()))).append("</span>");
         }
         if (node.via() != null) {
-            html.append("<span class=\"via\">über ").append(esc(node.via().source())).append("</span>");
+            html.append("<span class=\"via\">über ").append(via(node.via().source())).append("</span>");
+            if (node.via().source().contains(XmlScanner.CONDITION_PREFIX)) {
+                html.append("<span class=\"badge cond\" title=\"Wird nur unter einer Bedingung eingebunden\">bedingt</span>");
+            }
         }
         switch (node.status()) {
             case CYCLE -> html.append("<span class=\"badge\">Zyklus</span>");
@@ -388,7 +393,8 @@ public class HtmlRenderer {
                     + esc(node.title()) + "</span>" + (node.detail() != null ? " – " + esc(node.detail()) : "");
             case GROUP -> line = "<span class=\"kw\">GRUPPE</span><b>" + esc(node.title()) + "</b>";
             case ENTRY -> line = "<span class=\"kw\">EINTRAG</span><span class=\"code\">" + esc(node.title())
-                    + "</span>" + (node.detail() != null ? " – " + esc(node.detail()) : "");
+                    + "</span>" + (node.detail() == null ? ""
+                    : (node.detail().startsWith("(") ? " " : " – ") + esc(node.detail()));
             default -> line = "<span class=\"code\">" + esc(node.title()) + "</span>"
                     + (node.detail() != null ? " " + esc(node.detail()) : "");
         }
@@ -399,6 +405,26 @@ public class HtmlRenderer {
         html.append("<li><details open><summary class=\"lr\">").append(line).append("</summary>");
         renderLogic(node.children(), html);
         html.append("</details></li>");
+    }
+
+    /** Verweisweg mit hervorgehobenen Bedingungen, z. B. „WENN a = "1" › group „X“ › textblock/@textblockID“. */
+    private static String via(String source) {
+        StringBuilder out = new StringBuilder();
+        for (String part : source.split(" › ")) {
+            if (out.length() > 0) {
+                out.append(" › ");
+            }
+            if (part.startsWith(XmlScanner.CONDITION_PREFIX)) {
+                out.append("<span class=\"kw\">WENN</span><span class=\"code\">")
+                        .append(expression(part.substring(XmlScanner.CONDITION_PREFIX.length()))).append("</span>");
+            } else if (part.startsWith("FÜR JEDES ")) {
+                out.append("<span class=\"kw\">FÜR JEDES</span><span class=\"code vr\">")
+                        .append(esc(part.substring("FÜR JEDES ".length()))).append("</span>");
+            } else {
+                out.append(esc(part));
+            }
+        }
+        return out.toString();
     }
 
     /** Hebt in einem Ausdruck Werte und UND/ODER/NICHT hervor; leere Werte werden als „leer“ angezeigt. */
