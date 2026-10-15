@@ -53,6 +53,29 @@ public class TreeBuilder {
         return hits == null ? List.of() : hits;
     }
 
+    /**
+     * Alle ab der Startdatei erreichbaren Dateien (inkl. Start), jede genau einmal, in der
+     * Reihenfolge, in der sie gefunden werden. Anders als {@link #build} wird kein Baum
+     * aufgespannt – mehrfach eingebundene Bausteine kosten also nichts extra.
+     */
+    public Set<XmlFile> reachable(XmlFile start) {
+        Set<XmlFile> seen = new LinkedHashSet<>();
+        java.util.ArrayDeque<XmlFile> queue = new java.util.ArrayDeque<>();
+        seen.add(start);
+        queue.add(start);
+        while (!queue.isEmpty()) {
+            XmlFile file = queue.poll();
+            for (XmlFile.Candidate candidate : file.candidates()) {
+                for (XmlFile target : lookup(candidate.value())) {
+                    if (seen.add(target)) {
+                        queue.add(target);
+                    }
+                }
+            }
+        }
+        return seen;
+    }
+
     public TreeNode build(XmlFile start) {
         TreeNode root = new TreeNode(start, null, TreeNode.Status.OK);
         Set<XmlFile> path = new HashSet<>();

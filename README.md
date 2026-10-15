@@ -125,6 +125,45 @@ Besonderheiten im Baum:
 Die HTML-Seite ist eigenständig (keine externen Ressourcen), mit Suchfeld sowie Auf-/Zuklappen.
 DTDs und externe Entities werden beim Parsen nicht aufgelöst.
 
+## Zweite Anwendung: Variablen-Export (CSV)
+
+`de.xmltree.VariableExport` durchläuft **alle Vorlagen** eines Verzeichnisses, ermittelt je
+Vorlage wie der Tree-Viewer alle erreichbaren Bausteine (jeden nur einmal) und schreibt deren
+Variablen in eine CSV-Datei (Trennzeichen `;`, UTF-8 mit BOM – öffnet direkt in Excel).
+
+```bash
+java -cp target/xml-tree-viewer-1.0.0.jar de.xmltree.VariableExport \
+     --vorlagen C:\vorlagen --dir C:\bausteine --out C:\temp\variablen.csv
+```
+
+In IntelliJ: Startkonfiguration **Variablen-Export (Beispiel)**. Optionen wie beim Tree-Viewer
+(`--dir` mehrfach, `--ext`, `--id-names`, `--ref-names`, …); `--vorlagen` ist Pflicht.
+
+| Spalte | Inhalt |
+|---|---|
+| Vorlage | ID der Vorlage |
+| Baustein | ID des Bausteins (auch die Vorlage selbst, falls sie Variablen enthält) |
+| Variable | Variablenname |
+| uname, iterkey, datatype, automatic | Attribute des `<variable>`-Elements (bei Zuordnungen: uname) |
+| Fundart | wie die Variable erkannt wurde (siehe unten) |
+| Fundstelle | Element/Attribut, z. B. `<variable>`, `cmd/@orig`, `iteration/@name` |
+| Vorlage/Baustein Description, Datei | zur Orientierung |
+
+Erkannte Muster (**Fundart**):
+
+| Fundart | Beispiel |
+|---|---|
+| variable-Element | `<variable name="…" uname="…" iterkey="…" datatype="string" automatic="true"/>` |
+| Zuordnung name,uname | `dokument.fachdaten.berufBezug,Data.BusinessData.berufBezug` (auch mit `"`) |
+| Pfad | `system_BFSLeben.dokumentDaten.Doku.Dynamik`, auch in `orig="…"`, `iteration name`, Kommentaren |
+| VAR-Name | `VAR_LE_FONDSNAME_LANG`, `&VAR_CC_NAME`, Listen `VAR_A, VAR_B` |
+| Namensliste | `varLeBerater, varLeBeratungsdatum`, `Anzahl_Fonds` |
+
+Nicht ausgewertet werden `<conditionValue>` und `<const>` (Literale, z. B. Lookup-Tabellen),
+`<meta>`, die Attribute des Root-Elements, `description`/`name` von Gruppen und Einträgen sowie
+normaler Text. Einzelne Wörter ohne Punkt, Unterstrich oder Binnengroßbuchstaben (z. B. `DOPDATE`,
+`TAB`) werden allein nicht erkannt, als Teil einer Zuordnung (`DOPDATE,Data.…`) aber schon.
+
 ## Beispiel
 
 Unter `samples/` liegt eine Vorlage im echten Format mit Gruppe, Zyklus und fehlendem Baustein:

@@ -1,2 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<textblock id="196888" description="Unterschrift Arzt"/>
+<textblock id="196888" description="Unterschrift Arzt">
+  <set><variable name="dokument.fachdaten.dokumentDatenID" uname="Data.BusinessData.dokument.fachdaten.dokumentDatenID" iterkey="Data.BusinessData" datatype="string" automatic="true"/>
+    <equalTo/>
+    <conditionValue>1</conditionValue></set>
+  <mapping>dokument.fachdaten.berufBezug,Data.BusinessData.berufBezug</mapping>
+  <fields>varLeBerater, varLeBeratungsdatum</fields>
+</textblock>

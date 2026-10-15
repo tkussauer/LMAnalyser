@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Variablen-Export (Beispiel)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="de.xmltree.VariableExport" />
+    <module name="xml-tree-viewer" />
+    <option name="PROGRAM_PARAMETERS" value="--vorlagen samples/vorlagen --dir samples/bausteine --out target/variablen.csv" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

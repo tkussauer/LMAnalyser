@@ -207,7 +207,7 @@ public class XmlScanner {
     }
 
     /** Parser ohne DTD-/External-Entity-Auflösung (Schutz vor XXE). */
-    private static DocumentBuilder newSecureBuilder() {
+    static DocumentBuilder newSecureBuilder() {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(false);

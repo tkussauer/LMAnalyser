@@ -158,14 +158,14 @@ public final class Main {
         return hits.get(0);
     }
 
-    private static String next(String[] args, int i, String option) {
+    static String next(String[] args, int i, String option) {
         if (i >= args.length) {
             throw new IllegalArgumentException("Wert für " + option + " fehlt");
         }
         return args[i];
     }
 
-    private static Set<String> names(String csv) {
+    static Set<String> names(String csv) {
         return Set.copyOf(Arrays.asList(csv.split(",")));
     }
 }
