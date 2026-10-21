@@ -82,6 +82,9 @@ public final class VariableExport {
                 }
                 case "--ext" -> extensions = Main.names(Main.next(args, ++i, arg));
                 case "--ignore-case" -> ignoreCase = true;
+                case "--start" -> throw new IllegalArgumentException("--start gehört zum Tree-Viewer (HTML-Baum einer Vorlage)."
+                        + " Dieser wird so gestartet: java -jar xml-tree-viewer.jar --start <vorlage> --dir <bausteine>."
+                        + " Der Variablen-Export erwartet --vorlagen <verzeichnis>.");
                 default -> throw new IllegalArgumentException("Unbekannte Option: " + arg);
             }
         }

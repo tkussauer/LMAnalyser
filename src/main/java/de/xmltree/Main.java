@@ -75,6 +75,8 @@ public final class Main {
                 }
                 case "--ignore-case" -> ignoreCase = true;
                 case "--ext" -> extensions = names(next(args, ++i, arg));
+                case "--vorlagen" -> throw new IllegalArgumentException("--vorlagen gehört zum Variablen-Export (CSV)."
+                        + " Dieser wird so gestartet: java -cp xml-tree-viewer.jar de.xmltree.VariableExport --vorlagen <verz> --dir <bausteine>.");
                 default -> throw new IllegalArgumentException("Unbekannte Option: " + arg);
             }
         }
