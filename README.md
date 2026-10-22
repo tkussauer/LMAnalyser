@@ -22,14 +22,14 @@ java -jar target/xml-tree-viewer-1.0.0.jar --start samples/vorlagen/anamnese.cml
 java -jar target/xml-tree-viewer-1.0.0.jar --start vorlagen/angebot.cml --dir bausteine --dir texte
 
 # Start über ID oder Description statt Pfad, eigene Zieldatei
-java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start 200000 --out anamnese.html
+java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start 200000 --out C:\temp
 ```
 
 | Option | Bedeutung |
 |---|---|
 | `--start <wert>` | Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht) |
 | `--dir <verz>` | Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv); mehrfach angebbar. Die Startdatei darf auch außerhalb liegen. Standard: Verzeichnis der Startdatei |
-| `--out <datei>` | Ziel-HTML-Datei, Standard `tree.html` |
+| `--out <verz>` | Zielverzeichnis; die HTML-Datei heißt wie die Vorlage (`ANGEBOT.cml` → `ANGEBOT.html`). Standard: aktuelles Verzeichnis. Ein Wert mit Endung `.html` wird als Dateiname übernommen |
 | `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id,textblockID,documentID` |
 | `--desc-names a,b` | Attribut-/Elementnamen der Description, Standard `description` |
 | `--ref-names a,b` | Attribute/Elemente mit Verweisen, Standard `textblockID`; `*` = alle Werte prüfen |
@@ -43,10 +43,10 @@ Namen werden ohne Beachtung der Groß-/Kleinschreibung und ohne Namespace-Präfi
 
 1. *File → Open…* und den Projektordner (mit der `pom.xml`) öffnen – IntelliJ erkennt das Maven-Projekt.
 2. Oben rechts die Startkonfiguration **XML Tree Viewer (Beispiel)** wählen (liegt in `.run/`)
-   und auf ▶ klicken. Ergebnis: `target/tree.html`.
+   und auf ▶ klicken. Ergebnis: `target/anamnese.html`.
 3. Für eigene Dateien: *Run → Edit Configurations…* → Konfiguration kopieren und unter
    *Program arguments* die eigenen Pfade eintragen, z. B.
-   `--start C:\vorlagen\angebot.cml --dir C:\referenzen --out C:\temp\baum.html`.
+   `--start C:\vorlagen\angebot.cml --dir C:\referenzen --out C:\temp` (ergibt `C:\temp\angebot.html`).
 
 Alternativ `src/main/java/de/xmltree/Main.java` öffnen, auf den grünen Pfeil neben `main`
 klicken und anschließend die Argumente wie in Schritt 3 ergänzen.

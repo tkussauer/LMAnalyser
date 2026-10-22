@@ -23,7 +23,9 @@ public final class Main {
               --dir <verz>        Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv);
                                   mehrfach angebbar. Die Startdatei darf auch außerhalb liegen.
                                   (Standard: Verzeichnis der Startdatei bzw. aktuelles Verzeichnis)
-              --out <datei>       Ziel-HTML-Datei (Standard: tree.html)
+              --out <verz>        Zielverzeichnis; die Datei heißt wie die Vorlage, aber mit .html
+                                  (z. B. ANGEBOT.cml -> ANGEBOT.html). Standard: aktuelles Verzeichnis.
+                                  Endet der Wert auf .html, wird genau diese Datei geschrieben.
               --id-names <a,b>    Attribut-/Elementnamen der ID am Root-Element (Standard: id,textblockID,documentID)
               --desc-names <a,b>  Attribut-/Elementnamen der Description (Standard: description)
               --ref-names <a,b>   Attribute/Elemente, die Verweise enthalten (Standard: textblockID).
@@ -49,7 +51,7 @@ public final class Main {
 
     static int run(String[] args) {
         String start = null;
-        Path out = Path.of("tree.html");
+        Path out = Path.of(".");
         List<Path> dirs = new ArrayList<>();
         Set<String> idNames = ScanOptions.DEFAULT_ID_NAMES;
         Set<String> descNames = ScanOptions.DEFAULT_DESCRIPTION_NAMES;
@@ -122,6 +124,7 @@ public final class Main {
 
         Path baseDir = dirs.size() == 1 ? dirs.get(0) : null;
         String html = new HtmlRenderer(baseDir, builder::lookup).render(tree, files.size(), warnings);
+        out = outputFile(out, startFile);
         try {
             Path parent = out.toAbsolutePath().getParent();
             if (parent != null) {
@@ -158,6 +161,20 @@ public final class Main {
                     + hits.stream().map(f -> f.path().toString()).toList());
         }
         return hits.get(0);
+    }
+
+    /**
+     * Zieldatei: ist {@code out} ein Verzeichnis, heißt die Datei wie die Vorlage mit der Endung
+     * {@code .html}; endet {@code out} selbst auf .html/.htm, wird genau diese Datei verwendet.
+     */
+    static Path outputFile(Path out, XmlFile start) {
+        String given = out.getFileName() == null ? "" : out.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+        if (given.endsWith(".html") || given.endsWith(".htm")) {
+            return out;
+        }
+        String name = start.path().getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        return out.resolve((dot > 0 ? name.substring(0, dot) : name) + ".html");
     }
 
     static String next(String[] args, int i, String option) {
