@@ -46,6 +46,29 @@ public class TreeNode {
         return children;
     }
 
+    /** Alle Dateien im Baum, jede nur einmal. */
+    public java.util.Set<XmlFile> files() {
+        java.util.Set<XmlFile> out = new java.util.LinkedHashSet<>();
+        collectFiles(this, out);
+        return out;
+    }
+
+    private static void collectFiles(TreeNode node, java.util.Set<XmlFile> out) {
+        if (node.file != null) {
+            out.add(node.file);
+        }
+        node.children.forEach(child -> collectFiles(child, out));
+    }
+
+    /** Anzahl der Knoten mit diesem Status im Teilbaum. */
+    public int count(Status wanted) {
+        int n = status == wanted ? 1 : 0;
+        for (TreeNode child : children) {
+            n += child.count(wanted);
+        }
+        return n;
+    }
+
     public int size() {
         int n = 1;
         for (TreeNode child : children) {

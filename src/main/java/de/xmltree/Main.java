@@ -19,10 +19,12 @@ public final class Main {
               java -jar xml-tree-viewer.jar --start <datei|ID|Description> [Optionen]
 
             Optionen:
-              --start <wert>      Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht)
+              --start <wert>      Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht).
+                                  Ein Verzeichnis: jede Vorlage darin wird verarbeitet (eine HTML-Datei
+                                  je Vorlage im --out-Verzeichnis plus Übersicht index.html).
               --dir <verz>        Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv);
                                   mehrfach angebbar. Die Startdatei darf auch außerhalb liegen.
-                                  (Standard: Verzeichnis der Startdatei bzw. aktuelles Verzeichnis)
+                                  (Standard: Verzeichnis der Startdatei bzw. das Vorlagen-Verzeichnis)
               --out <verz>        Zielverzeichnis; die Datei heißt wie die Vorlage, aber mit .html
                                   (z. B. ANGEBOT.cml -> ANGEBOT.html). Standard: aktuelles Verzeichnis.
                                   Endet der Wert auf .html, wird genau diese Datei geschrieben.
@@ -87,6 +89,10 @@ public final class Main {
         }
 
         Path startPath = Path.of(start);
+        ScanOptions options = new ScanOptions(idNames, descNames, refNames, ignoreCase, extensions);
+        if (Files.isDirectory(startPath)) {
+            return runAll(startPath, out, dirs, options);
+        }
         boolean startIsFile = Files.isRegularFile(startPath);
         if (dirs.isEmpty()) {
             Path parent = startIsFile ? startPath.toAbsolutePath().getParent() : Path.of(".");
@@ -98,7 +104,6 @@ public final class Main {
             }
         }
 
-        ScanOptions options = new ScanOptions(idNames, descNames, refNames, ignoreCase, extensions);
         XmlScanner scanner = new XmlScanner(options);
         List<XmlFile> files = new ArrayList<>(scanner.scanDirectories(dirs));
         if (startIsFile) {
@@ -141,6 +146,95 @@ public final class Main {
         warnings.forEach(w -> System.out.println("  Hinweis: " + w));
         System.out.println("HTML geschrieben: " + out.toAbsolutePath());
         return 0;
+    }
+
+    /**
+     * {@code --start <verzeichnis>}: jede Datei im Verzeichnis (rekursiv) ist eine Vorlage. Je Vorlage
+     * wird eine HTML-Datei ins {@code --out}-Verzeichnis geschrieben, dazu eine Übersicht index.html.
+     */
+    static int runAll(Path templateDir, Path out, List<Path> dirs, ScanOptions options) {
+        String outName = out.getFileName() == null ? "" : out.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+        if (outName.endsWith(".html") || outName.endsWith(".htm")) {
+            throw new IllegalArgumentException("Bei --start <verzeichnis> muss --out ein Verzeichnis sein, keine Datei: " + out);
+        }
+        if (dirs.isEmpty()) {
+            dirs.add(templateDir);
+        }
+        for (Path dir : dirs) {
+            if (!Files.isDirectory(dir)) {
+                throw new IllegalArgumentException("Kein Verzeichnis: " + dir);
+            }
+        }
+
+        XmlScanner scanner = new XmlScanner(options);
+        List<XmlFile> templates = scanner.scanDirectories(List.of(templateDir));
+        if (templates.isEmpty()) {
+            throw new IllegalArgumentException("Keine Vorlagen mit den Endungen " + options.extensions() + " in " + templateDir);
+        }
+        // Index aus Bausteinen und Vorlagen, jede Datei nur einmal
+        java.util.Map<Path, XmlFile> byPath = new java.util.LinkedHashMap<>();
+        for (XmlFile file : scanner.scanDirectories(dirs)) {
+            byPath.put(file.path().toAbsolutePath().normalize(), file);
+        }
+        for (XmlFile template : templates) {
+            byPath.putIfAbsent(template.path().toAbsolutePath().normalize(), template);
+        }
+        List<XmlFile> files = new ArrayList<>(byPath.values());
+        TreeBuilder builder = new TreeBuilder(files, options);
+        List<String> warnings = new ArrayList<>(scanner.warnings());
+        warnings.addAll(builder.warnings());
+        Path baseDir = dirs.size() == 1 ? dirs.get(0) : null;
+
+        java.util.Set<String> usedNames = new java.util.HashSet<>(Set.of("index.html"));
+        List<HtmlRenderer.IndexRow> rows = new ArrayList<>();
+        int failed = 0;
+        for (XmlFile template : templates) {
+            XmlFile start = byPath.get(template.path().toAbsolutePath().normalize());
+            Path target = uniqueName(outputFile(out, start), usedNames);
+            try {
+                TreeNode tree = builder.build(start);
+                String html = new HtmlRenderer(baseDir, builder::lookup).render(tree, files.size(), warnings);
+                write(target, html);
+                rows.add(new HtmlRenderer.IndexRow(start, target.getFileName().toString(), tree.size(),
+                        tree.files().size(), tree.count(TreeNode.Status.UNRESOLVED)));
+                System.out.println("  " + start.displayName() + " -> " + target.getFileName());
+            } catch (IOException | RuntimeException e) {
+                failed++;
+                System.err.println("  Fehler bei " + start.path() + ": " + e.getMessage());
+            }
+        }
+        Path index = out.resolve("index.html");
+        try {
+            write(index, HtmlRenderer.renderIndex(rows, templateDir));
+        } catch (IOException e) {
+            System.err.println("Fehler beim Schreiben von " + index + ": " + e.getMessage());
+            return 1;
+        }
+
+        System.out.printf("%d Vorlagen verarbeitet (%d fehlgeschlagen), %d Dateien im Index, %d Hinweise.%n",
+                rows.size(), failed, files.size(), warnings.size());
+        warnings.forEach(w -> System.out.println("  Hinweis: " + w));
+        System.out.println("Übersicht: " + index.toAbsolutePath());
+        return failed == 0 ? 0 : 1;
+    }
+
+    /** Liegen zwei Vorlagen gleichen Namens in Unterordnern, bekommt die zweite den Zusatz _2, _3 … */
+    private static Path uniqueName(Path target, java.util.Set<String> used) {
+        String name = target.getFileName().toString();
+        String base = name.substring(0, name.length() - ".html".length());
+        String candidate = name;
+        for (int n = 2; !used.add(candidate.toLowerCase(java.util.Locale.ROOT)); n++) {
+            candidate = base + "_" + n + ".html";
+        }
+        return target.resolveSibling(candidate);
+    }
+
+    private static void write(Path target, String content) throws IOException {
+        Path parent = target.toAbsolutePath().getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        Files.writeString(target, content, StandardCharsets.UTF_8);
     }
 
     private static XmlFile findStart(String start, Path startPath, boolean startIsFile,

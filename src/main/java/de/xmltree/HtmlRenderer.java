@@ -382,16 +382,86 @@ public class HtmlRenderer {
 
     /** Alle Dateien, die ab der Vorlage erreichbar sind – jede nur einmal gezählt. */
     static java.util.Set<XmlFile> migrationFiles(TreeNode root) {
-        java.util.Set<XmlFile> files = new java.util.LinkedHashSet<>();
-        collectFiles(root, files);
-        return files;
+        return root.files();
     }
 
-    private static void collectFiles(TreeNode node, java.util.Set<XmlFile> out) {
-        if (node.file() != null) {
-            out.add(node.file());
+    /** Eine Zeile der Übersichtsseite bei {@code --start <verzeichnis>}. */
+    public record IndexRow(XmlFile template, String htmlFile, int nodes, int bausteine, int unresolved) {
+    }
+
+    /** Übersichtsseite mit Links zu allen erzeugten Vorlagen-Seiten. */
+    static String renderIndex(List<IndexRow> rows, Path templateDir) {
+        StringBuilder html = new StringBuilder(4096);
+        html.append("""
+                <!doctype html>
+                <html lang="de">
+                <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Vorlagen-Übersicht</title>
+                <style>
+                :root { --bg: #fafaf9; --fg: #1c1917; --muted: #78716c; --line: #d6d3d1; --card: #ffffff;
+                        --accent: #2563eb; --ok: #15803d; --unres: #b91c1c; }
+                @media (prefers-color-scheme: dark) {
+                  :root { --bg: #1c1917; --fg: #f5f5f4; --muted: #a8a29e; --line: #44403c; --card: #292524;
+                          --accent: #60a5fa; --ok: #4ade80; --unres: #f87171; }
+                }
+                body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg);
+                       font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+                main { max-width: 1200px; margin: 0 auto; }
+                h1 { font-size: 22px; margin: 0 0 4px; }
+                .meta { color: var(--muted); margin-bottom: 16px; }
+                input { width: 100%; box-sizing: border-box; padding: 6px 10px; margin-bottom: 12px; border: 1px solid var(--line);
+                        border-radius: 6px; background: var(--card); color: var(--fg); font: inherit; }
+                .wrap { overflow-x: auto; }
+                table { border-collapse: collapse; width: 100%; background: var(--card); border: 1px solid var(--line); }
+                th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+                th { color: var(--muted); font-weight: 600; font-size: 12px; }
+                .num { text-align: right; font-variant-numeric: tabular-nums; }
+                a { color: var(--accent); }
+                .unres { color: var(--unres); font-weight: 600; }
+                .mig { color: var(--ok); }
+                </style>
+                </head>
+                <body>
+                <main>
+                <h1>Vorlagen-Übersicht</h1>
+                """);
+        html.append("<div class=\"meta\">").append(rows.size()).append(" Vorlagen aus ")
+                .append(esc(templateDir.toAbsolutePath().normalize().toString())).append(" · erzeugt ")
+                .append(esc(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))))
+                .append("</div>\n");
+        html.append("<input id=\"filter\" type=\"search\" placeholder=\"Vorlagen filtern …\">\n");
+        html.append("<div class=\"wrap\"><table><thead><tr><th>Vorlage</th><th>ID</th><th>Description</th>"
+                + "<th class=\"num\">Knoten</th><th class=\"num\">Bausteine (Migration)</th><th class=\"num\">nicht gefunden</th></tr></thead><tbody>\n");
+        for (IndexRow row : rows) {
+            XmlFile t = row.template();
+            html.append("<tr><td><a href=\"").append(esc(row.htmlFile())).append("\">")
+                    .append(esc(t.displayName())).append("</a></td><td>").append(esc(nz(t.id())))
+                    .append("</td><td>").append(esc(nz(t.description())))
+                    .append("</td><td class=\"num\">").append(row.nodes())
+                    .append("</td><td class=\"num mig\">").append(row.bausteine())
+                    .append("</td><td class=\"num").append(row.unresolved() > 0 ? " unres" : "").append("\">")
+                    .append(row.unresolved()).append("</td></tr>\n");
         }
-        node.children().forEach(child -> collectFiles(child, out));
+        html.append("""
+                </tbody></table></div>
+                </main>
+                <script>
+                (function () {
+                  var input = document.getElementById('filter');
+                  input.addEventListener('input', function () {
+                    var q = input.value.trim().toLowerCase();
+                    document.querySelectorAll('tbody tr').forEach(function (tr) {
+                      tr.style.display = !q || tr.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+                    });
+                  });
+                })();
+                </script>
+                </body>
+                </html>
+                """);
+        return html.toString();
     }
 
     /** Nur Verweise und Gruppen zeigt schon der Baum – Logik lohnt sich erst bei Regeln, Text o. Ä. */

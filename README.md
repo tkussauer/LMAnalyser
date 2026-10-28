@@ -25,9 +25,20 @@ java -jar target/xml-tree-viewer-1.0.0.jar --start vorlagen/angebot.cml --dir ba
 java -jar target/xml-tree-viewer-1.0.0.jar --dir samples --start 200000 --out C:\temp
 ```
 
+Alle Vorlagen eines Verzeichnisses auf einmal:
+
+```bash
+java -jar target/xml-tree-viewer-1.0.0.jar --start C:\vorlagen --dir C:\bausteine --out C:\ergebnis
+```
+
+Zeigt `--start` auf ein **Verzeichnis**, ist jede Datei darin (rekursiv, Endung laut `--ext`) eine
+Vorlage. Für jede entsteht im `--out`-Verzeichnis eine eigene HTML-Datei (`ANGEBOT.cml` →
+`ANGEBOT.html`), dazu die Übersicht `index.html` mit Links, Anzahl Knoten, Bausteinen und nicht
+gefundenen Verweisen je Vorlage. Die Bausteine werden dabei nur einmal eingelesen.
+
 | Option | Bedeutung |
 |---|---|
-| `--start <wert>` | Referenzdatei (Pfad) oder ID/Description der Startvorlage (Pflicht) |
+| `--start <wert>` | Referenzdatei (Pfad), ID/Description der Startvorlage oder ein Verzeichnis mit Vorlagen (Pflicht) |
 | `--dir <verz>` | Verzeichnis, in dem die referenzierten Dateien liegen (rekursiv); mehrfach angebbar. Die Startdatei darf auch außerhalb liegen. Standard: Verzeichnis der Startdatei |
 | `--out <verz>` | Zielverzeichnis; die HTML-Datei heißt wie die Vorlage (`ANGEBOT.cml` → `ANGEBOT.html`). Standard: aktuelles Verzeichnis. Ein Wert mit Endung `.html` wird als Dateiname übernommen |
 | `--id-names a,b` | Attribut-/Elementnamen der ID am Root-Element, Standard `id,textblockID,documentID` |
