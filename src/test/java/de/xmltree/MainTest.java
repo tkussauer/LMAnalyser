@@ -32,7 +32,8 @@ class MainTest {
     @Test
     void startDirectoryProcessesEveryTemplate() throws Exception {
         Path vorlagen = Files.createDirectories(dir.resolve("Vorlagen"));
-        Path unterordner = Files.createDirectories(vorlagen.resolve("alt"));
+        // "AAA" steht alphabetisch vor "ANGEBOT.cml" – die Vorlage der obersten Ebene muss trotzdem ANGEBOT.html bekommen
+        Path unterordner = Files.createDirectories(vorlagen.resolve("AAA"));
         Path bausteine = Files.createDirectories(dir.resolve("Bausteine"));
         Files.writeString(vorlagen.resolve("ANGEBOT.cml"), "<document ID='V1' Description='Angebot'>"
                 + "<textblock textblockID='B1'/><textblock textblockID='FEHLT'/></document>");

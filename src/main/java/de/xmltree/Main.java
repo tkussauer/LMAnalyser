@@ -167,7 +167,14 @@ public final class Main {
         }
 
         XmlScanner scanner = new XmlScanner(options);
-        List<XmlFile> templates = scanner.scanDirectories(List.of(templateDir));
+        List<XmlFile> templates = new ArrayList<>(scanner.scanDirectories(List.of(templateDir)));
+        // Feste Reihenfolge auf allen Betriebssystemen: oberste Ebene zuerst, dann alphabetisch ohne
+        // Groß-/Kleinschreibung – so behält bei gleichen Namen die Vorlage der obersten Ebene ihren Namen
+        Path root = templateDir.toAbsolutePath().normalize();
+        templates.sort(java.util.Comparator
+                .comparingInt((XmlFile f) -> root.relativize(f.path().toAbsolutePath().normalize()).getNameCount())
+                .thenComparing(f -> root.relativize(f.path().toAbsolutePath().normalize()).toString()
+                        .replace('\\', '/').toLowerCase(java.util.Locale.ROOT)));
         if (templates.isEmpty()) {
             throw new IllegalArgumentException("Keine Vorlagen mit den Endungen " + options.extensions() + " in " + templateDir);
         }
