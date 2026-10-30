@@ -258,8 +258,9 @@ public class HtmlRenderer {
     private void renderNode(TreeNode node, StringBuilder html) {
         XmlFile file = node.file();
         String search = file == null
-                ? node.via().value()
+                ? node.via().value() + " " + nz(node.via().groupEntry())
                 : String.join(" ", nz(file.id()), nz(file.description()), file.rootElement(), relative(file.path()),
+                        node.via() != null && node.via().groupEntry() != null ? node.via().groupEntry() : "",
                         String.join(" ", file.meta().values()));
         Integer logicId = null;
         if (file != null && hasRules(file)) {
@@ -283,9 +284,11 @@ public class HtmlRenderer {
         if (file == null) {
             html.append("<span class=\"lbl\">Referenz</span><span class=\"val\">")
                     .append(esc(node.via().value())).append("</span>");
+            appendGroupEntry(node, html);
         } else {
             html.append("<span class=\"root-el\">&lt;").append(esc(file.rootElement())).append("&gt;</span>");
             html.append("<span><span class=\"lbl\">ID</span> ").append(value(file.id())).append("</span>");
+            appendGroupEntry(node, html);
             html.append("<span><span class=\"lbl\">Description</span> ").append(value(file.description())).append("</span>");
             html.append("<span class=\"file\" title=\"").append(esc(file.path().toAbsolutePath().toString()))
                     .append("\">").append(esc(relative(file.path()))).append("</span>");
@@ -605,6 +608,14 @@ public class HtmlRenderer {
         }
         quoted.appendTail(out);
         return KEYWORD.matcher(out.toString()).replaceAll("<span class=\"kw\">$1</span>");
+    }
+
+    /** Name des {@code <groupentry>}, über den der Knoten eingebunden ist – direkt hinter der ID. */
+    private static void appendGroupEntry(TreeNode node, StringBuilder html) {
+        if (node.via() != null && node.via().groupEntry() != null) {
+            html.append("<span><span class=\"lbl\">Groupentry</span> <span class=\"val code\">")
+                    .append(esc(node.via().groupEntry())).append("</span></span>");
+        }
     }
 
     private String relative(Path path) {

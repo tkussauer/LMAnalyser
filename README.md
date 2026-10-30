@@ -126,6 +126,10 @@ eingebunden wird –, trägt das grüne Kennzeichen **Migration**. Die Kopfzeile
 dieser Bausteine (jede Datei einmal gezählt). Verweist eine ID auf mehrere Dateien, steht dort
 **Migration prüfen**; nicht gefundene Verweise werden nicht markiert.
 
+Wird ein Baustein über einen `<groupentry>` eingebunden, steht dessen `name` (z. B.
+`HL_KO_LE_RBS_INFO_PRODUEBERSICHT`) direkt hinter der ID – auch bei nicht gefundenen Verweisen.
+Die Suche findet Bausteine auch über diesen Namen.
+
 Besonderheiten im Baum:
 
 - **Zyklus** – die Datei liegt bereits auf dem Pfad zur Wurzel und wird nicht erneut aufgelöst.

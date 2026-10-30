@@ -92,7 +92,7 @@ public class XmlScanner {
         }
 
         List<XmlFile.Candidate> candidates = new ArrayList<>();
-        collectCandidates(root, "", ownKeyNodes, candidates);
+        collectCandidates(root, "", null, ownKeyNodes, candidates);
         return new XmlFile(path, root.getTagName(), emptyToNull(id), emptyToNull(description), candidates,
                 LogicParser.parse(root), readMeta(root));
     }
@@ -101,7 +101,7 @@ public class XmlScanner {
      * @param context Pfad der beschrifteten Vorfahren (z. B. Gruppen), damit im Baum sichtbar ist,
      *                in welcher Gruppe ein Verweis steht
      */
-    private void collectCandidates(Element element, String context, List<Node> ownKeyNodes,
+    private void collectCandidates(Element element, String context, String groupEntry, List<Node> ownKeyNodes,
                                    List<XmlFile.Candidate> out) {
         NamedNodeMap attributes = element.getAttributes();
         for (int i = 0; i < attributes.getLength(); i++) {
@@ -110,13 +110,13 @@ public class XmlScanner {
                 continue;
             }
             if (!options.restrictsReferences() || options.isReference(attr.getName())) {
-                addCandidate(attr.getValue(), context + element.getTagName() + "/@" + attr.getName(), out);
+                addCandidate(attr.getValue(), context + element.getTagName() + "/@" + attr.getName(), groupEntry, out);
             }
         }
         List<Element> children = childElements(element);
         if (children.isEmpty() && !ownKeyNodes.contains(element)
                 && (!options.restrictsReferences() || options.isReference(element.getTagName()))) {
-            addCandidate(element.getTextContent(), context + "<" + element.getTagName() + ">", out);
+            addCandidate(element.getTextContent(), context + "<" + element.getTagName() + ">", groupEntry, out);
         }
         String childContext = context;
         if (element.getParentNode() != element.getOwnerDocument()) {
@@ -124,6 +124,11 @@ public class XmlScanner {
             if (label != null) {
                 childContext = context + label + " › ";
             }
+        }
+        String childEntry = groupEntry;
+        if (ScanOptions.localName(element.getTagName()).equals("groupentry")) {
+            String name = element.getAttribute("name").trim();
+            childEntry = name.isEmpty() ? groupEntry : name;
         }
         boolean isConditions = ScanOptions.localName(element.getTagName()).equals("conditions");
         String condition = isConditions ? LogicParser.condition(element) : null;
@@ -138,7 +143,7 @@ public class XmlScanner {
                     nested = context + CONDITION_PREFIX + "NICHT (" + condition + ") › ";
                 }
             }
-            collectCandidates(child, nested, ownKeyNodes, out);
+            collectCandidates(child, nested, childEntry, ownKeyNodes, out);
         }
     }
 
@@ -181,9 +186,9 @@ public class XmlScanner {
         return null;
     }
 
-    private static void addCandidate(String value, String source, List<XmlFile.Candidate> out) {
+    private static void addCandidate(String value, String source, String groupEntry, List<XmlFile.Candidate> out) {
         if (value != null && !value.isBlank()) {
-            out.add(new XmlFile.Candidate(value.trim(), source));
+            out.add(new XmlFile.Candidate(value.trim(), source, groupEntry));
         }
     }
 

@@ -24,8 +24,16 @@ public record XmlFile(Path path, String rootElement, String id, String descripti
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    /** Ein Wert aus der Datei (Attribut oder Elementtext), der eine Referenz sein kann. */
-    public record Candidate(String value, String source) {
+    /**
+     * Ein Wert aus der Datei (Attribut oder Elementtext), der eine Referenz sein kann.
+     *
+     * @param groupEntry {@code name} des umgebenden {@code <groupentry>}, sonst {@code null}
+     */
+    public record Candidate(String value, String source, String groupEntry) {
+
+        public Candidate(String value, String source) {
+            this(value, source, null);
+        }
     }
 
     public String displayName() {

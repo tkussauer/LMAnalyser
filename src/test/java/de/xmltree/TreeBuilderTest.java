@@ -226,6 +226,24 @@ class TreeBuilderTest {
     }
 
     @Test
+    void showsGroupentryNameAfterId() throws Exception {
+        write("v.cml", "<document ID='1'><group description='Tarifauswahl'>"
+                + "<groupentry name='HL_KO_LE_RBS_INFO_PRODUEBERSICHT' description='Hinweis'>"
+                + "<textblock textblockID='2'/></groupentry></group><textblock textblockID='3'/></document>");
+        write("a.cml", "<textblock ID='2'/>");
+        write("b.cml", "<textblock ID='3'/>");
+
+        TreeNode root = buildFrom("v.cml", ScanOptions.defaults());
+        assertEquals("HL_KO_LE_RBS_INFO_PRODUEBERSICHT", root.children().get(0).via().groupEntry());
+        assertNull(root.children().get(1).via().groupEntry());
+
+        String html = new HtmlRenderer(dir).render(root, 3, List.of());
+        assertTrue(html.contains("<span class=\"lbl\">ID</span> <span class=\"val\">2</span></span>"
+                + "<span><span class=\"lbl\">Groupentry</span> <span class=\"val code\">HL_KO_LE_RBS_INFO_PRODUEBERSICHT</span>"));
+        assertEquals(1, html.split("lbl\">Groupentry", -1).length - 1, "nur beim Baustein aus dem groupentry");
+    }
+
+    @Test
     void reportsMissingTextblock() throws Exception {
         write("vorlage.cml", "<textblock id='1'><textblock textblockID='404'/></textblock>");
 
