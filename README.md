@@ -179,30 +179,6 @@ Nicht ausgewertet werden `<conditionValue>` und `<const>` (Literale, z. B. Looku
 normaler Text. Einzelne Wörter ohne Punkt, Unterstrich oder Binnengroßbuchstaben (z. B. `DOPDATE`,
 `TAB`) werden allein nicht erkannt, als Teil einer Zuordnung (`DOPDATE,Data.…`) aber schon.
 
-## Dritte Anwendung: Komplexitätsanalyse von Word-Vorlagen
-
-`de.xmltree.DocxAnalyse` liest Word-Vorlagen (`.docx`, `.dotx`, `.docm`, `.dotm`) – eine Datei oder
-ein ganzes Verzeichnis – und zählt **Felder** und **Bedingungen getrennt nach Inhalt, Kopfzeile
-und Fußzeile**.
-
-```bash
-java -cp target/xml-tree-viewer-1.0.0.jar de.xmltree.DocxAnalyse --in C:\vorlagen --out C:\ergebnis
-```
-
-- **Feld:** jedes Word-Feld (`MERGEFIELD`, `DATE`, `PAGE`, `NUMPAGES`, …) und jedes Inhaltssteuerelement
-- **Bedingung:** `IF`, `COMPARE`, `SKIPIF`, `NEXTIF`; Felder innerhalb einer Bedingung zählen zusätzlich als Feld
-- **Inhalt:** Hauptdokument sowie Fuß- und Endnoten; **Kopf-/Fußzeile:** jede Kopf- bzw. Fußzeile,
-  mit ihrem Einsatz (Standard, erste Seite, gerade Seiten)
-
-Ergebnis im `--out`-Verzeichnis (CSV mit `;`, UTF-8 mit BOM):
-
-| Datei | Inhalt |
-|---|---|
-| `docx-uebersicht.csv` | je Dokument und Bereich: Felder, Seriendruckfelder (gesamt/eindeutig), Bedingungen, Feldarten |
-| `docx-felder.csv` | jedes Feld und jede Bedingung mit Bereich, Teil (z. B. `footer2.xml (Standard)`), Art, Feldart und Name |
-
-In IntelliJ: Startkonfiguration **Docx-Analyse**, dort unter *Program arguments* `--in` anpassen.
-
 ## Beispiel
 
 Unter `samples/` liegt eine Vorlage im echten Format mit Gruppe, Zyklus und fehlendem Baustein:

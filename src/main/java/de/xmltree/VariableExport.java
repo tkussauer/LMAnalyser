@@ -155,7 +155,7 @@ public final class VariableExport {
     }
 
     /** CSV für Excel: UTF-8 mit BOM, damit Umlaute korrekt angezeigt werden. */
-    static BufferedWriter newCsv(Path out) throws IOException {
+    private static BufferedWriter newCsv(Path out) throws IOException {
         Path parent = out.toAbsolutePath().getParent();
         if (parent != null) {
             Files.createDirectories(parent);
