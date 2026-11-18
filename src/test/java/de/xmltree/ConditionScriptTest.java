@@ -129,6 +129,37 @@ class ConditionScriptTest {
     }
 
     @Test
+    void totalFileContainsEveryVariableRuleOnceWithoutDisplayRules() throws Exception {
+        Path vorlagen = Files.createDirectories(dir.resolve("Vorlagen"));
+        Path bausteine = Files.createDirectories(dir.resolve("Bausteine"));
+        Files.writeString(vorlagen.resolve("HL_A.cml"), "<document ID='VA'><textblock textblockID='B1'/><textblock textblockID='B2'/></document>");
+        Files.writeString(vorlagen.resolve("HL_B.cml"), "<document ID='VB'><textblock textblockID='B1'/></document>");
+        // B1 und B2 setzen VAR_X mit derselben Bedingung (Dublette), B2 zusätzlich mit anderer Bedingung
+        String same = "<conditions>" + cond("a", "equalTo", "1") + "<then>" + set("VAR_X", "j") + "</then></conditions>";
+        Files.writeString(bausteine.resolve("b1.cml"), "<textblock ID='B1'>" + same
+                + "<conditions>" + cond("a", "equalTo", "1") + "<then><p>Text</p></then></conditions></textblock>");
+        // <p> trennt die Blöcke, sonst bildeten sie eine gemeinsame if/else-if-Kette (andere Logik)
+        Files.writeString(bausteine.resolve("b2.cml"), "<textblock ID='B2'>" + same + "<p>Trenner</p>"
+                + "<conditions>" + cond("b", "equalTo", "2") + "<then>" + set("VAR_X", "n") + "</then></conditions>"
+                + "<conditions>" + cond("c", "equalTo", "3") + "<then>" + set("VAR_A", "k") + "</then></conditions></textblock>");
+        Path out = dir.resolve("out");
+
+        assertEquals(0, ConditionScript.run(new String[]{"--start", vorlagen.toString(), "--dir", bausteine.toString(),
+                "--out", out.toString()}));
+
+        String total = Files.readString(out.resolve(ConditionScript.TOTAL_FILE));
+        // Vorkommen: HL_A (B1, B2: 3 Regeln) + HL_B (B1: 1 Regel) = 5, eindeutig 3 → 2 Dubletten
+        assertTrue(total.contains("2 Vorlagen · 2 Variablen · 3 Regeln · 2 Dubletten entfernt"), total);
+        assertTrue(Files.readString(out.resolve("HL_A_Script.js")).contains("display("), "Einzeldateien behalten Anzeige-Regeln");
+        assertEquals(1, total.split("if \\(a == \"1\"\\)", -1).length - 1, "gleiche Regel nur einmal");
+        assertTrue(total.contains("// Variable VAR_X – Sternchenandruck\n// Bausteine: B1, B2\n// Vorlagen (2): HL_A, HL_B\n"
+                + "if (a == \"1\") {\n    return \"j\";\n}\n"), total);
+        assertTrue(total.contains("if (b == \"2\") {\n    return \"n\";\n}"), "andere Bedingung bleibt erhalten");
+        assertTrue(total.indexOf("Variable VAR_A") < total.indexOf("Variable VAR_X"), "nach Variable sortiert");
+        assertTrue(!total.contains("display("), "keine Anzeige-Regeln");
+    }
+
+    @Test
     void outerParenthesesAreRemovedOnlyWhenTheyBelongTogether() {
         assertEquals("a && b", ScriptGenerator.stripOuterParentheses("((a && b))"));
         assertEquals("(a) || (b)", ScriptGenerator.stripOuterParentheses("(a) || (b)"));

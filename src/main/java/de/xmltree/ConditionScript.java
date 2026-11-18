@@ -35,7 +35,8 @@ public final class ConditionScript {
               --dir <verz>        Verzeichnis mit den Bausteinen (rekursiv); mehrfach angebbar
                                   (Standard: Verzeichnis der Vorlage bzw. das Vorlagen-Verzeichnis)
               --out <verz>        Zielverzeichnis (Standard: aktuelles Verzeichnis);
-                                  Dateiname: <Vorlage>_Script.js
+                                  Dateiname: <Vorlage>_Script.js; zusätzlich Variablen_Gesamt_Script.txt mit
+                                  allen Variablen-Regeln aller Vorlagen ohne Dubletten (ohne Anzeige-Regeln)
               --id-names, --desc-names, --ref-names, --ext, --ignore-case   wie beim Tree-Viewer
               -h, --help          Diese Hilfe
             """;
@@ -145,12 +146,15 @@ public final class ConditionScript {
 
         ScriptGenerator generator = new ScriptGenerator(builder::lookup);
         Map<XmlFile, ScriptGenerator.Rules> cache = new HashMap<>();
-        Set<String> usedNames = new HashSet<>();
+        Set<String> usedNames = new HashSet<>(Set.of(TOTAL_FILE.toLowerCase(Locale.ROOT)));
+        Map<String, TotalRule> total = new LinkedHashMap<>();
         int failed = 0;
         for (XmlFile template : templates) {
             Path target = uniqueName(out.resolve(baseName(template) + "_Script.js"), usedNames);
             try {
-                String script = render(template, builder.reachable(template), generator, cache);
+                Set<XmlFile> bausteine = builder.reachable(template);
+                String script = render(template, bausteine, generator, cache);
+                collectTotal(template, bausteine, cache, total);
                 Path parent = target.toAbsolutePath().getParent();
                 if (parent != null) {
                     Files.createDirectories(parent);
@@ -162,8 +166,109 @@ public final class ConditionScript {
                 System.err.println("  Fehler bei " + template.path() + ": " + e.getMessage());
             }
         }
+        Path totalFile = out.resolve(TOTAL_FILE);
+        try {
+            Path parent = totalFile.toAbsolutePath().getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.writeString(totalFile, renderTotal(total, templates.size() - failed), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            System.err.println("Fehler beim Schreiben von " + totalFile + ": " + e.getMessage());
+            return 1;
+        }
         System.out.printf("%d Vorlagen verarbeitet (%d fehlgeschlagen).%n", templates.size() - failed, failed);
+        System.out.println("Gesamtdatei (" + total.size() + " Variablen-Regeln ohne Dubletten): " + totalFile.toAbsolutePath());
         return failed == 0 ? 0 : 1;
+    }
+
+    /** Name der Gesamtdatei aller Variablen-Regeln. */
+    static final String TOTAL_FILE = "Variablen_Gesamt_Script.txt";
+
+    /** Eine Variablen-Regel der Gesamtdatei mit allen Fundstellen. */
+    static final class TotalRule {
+        final String variable;
+        final String code;
+        String description;
+        int occurrences;
+        final Set<String> bausteine = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        final Set<String> vorlagen = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+        TotalRule(String variable, String code) {
+            this.variable = variable;
+            this.code = code;
+        }
+    }
+
+    /**
+     * Nimmt die Variablen-Regeln einer Vorlage in die Gesamtliste auf. Dublette = gleiche Variable und
+     * gleiche Bedingungslogik (gleicher Code); die Beschreibung zählt nicht mit.
+     */
+    static void collectTotal(XmlFile template, Iterable<XmlFile> bausteine, Map<XmlFile, ScriptGenerator.Rules> cache,
+                             Map<String, TotalRule> total) {
+        for (XmlFile baustein : bausteine) {
+            ScriptGenerator.Rules rules = cache.get(baustein);
+            if (rules == null) {
+                continue;
+            }
+            for (String rule : rules.variableRules()) {
+                int newline = rule.indexOf('\n');
+                String header = newline < 0 ? rule : rule.substring(0, newline);
+                if (!header.startsWith("// Variable ")) {
+                    continue;
+                }
+                String code = newline < 0 ? "" : rule.substring(newline + 1).stripTrailing();
+                String name = header.substring("// Variable ".length());
+                String description = null;
+                int dash = name.indexOf(" – ");
+                if (dash >= 0) {
+                    description = name.substring(dash + 3);
+                    name = name.substring(0, dash);
+                }
+                String variable = name.trim();
+                TotalRule entry = total.computeIfAbsent(variable + "\n" + code, k -> new TotalRule(variable, code));
+                if (entry.description == null) {
+                    entry.description = description;
+                }
+                entry.occurrences++;
+                entry.bausteine.add(label(baustein));
+                entry.vorlagen.add(baseName(template));
+            }
+        }
+    }
+
+    /** Gesamtdatei: alle Variablen-Regeln ohne Dubletten, sortiert nach Variable, ohne Anzeige-Regeln. */
+    static String renderTotal(Map<String, TotalRule> total, int templateCount) {
+        List<TotalRule> rules = new ArrayList<>(total.values());
+        rules.sort(Comparator.comparing((TotalRule r) -> r.variable, String.CASE_INSENSITIVE_ORDER));
+        int occurrences = rules.stream().mapToInt(r -> r.occurrences).sum();
+        long variables = rules.stream().map(r -> r.variable.toLowerCase(Locale.ROOT)).distinct().count();
+        StringBuilder text = new StringBuilder();
+        text.append("// Variablen-Regeln aller Vorlagen (ohne Anzeige-Regeln)\n")
+                .append("// erzeugt ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")))
+                .append(" · ").append(templateCount).append(" Vorlagen · ").append(variables).append(" Variablen · ")
+                .append(rules.size()).append(" Regeln · ").append(occurrences - rules.size()).append(" Dubletten entfernt\n")
+                .append("// Dublette = gleiche Variable mit gleicher Bedingungslogik\n\n");
+        String previous = null;
+        for (TotalRule rule : rules) {
+            if (!rule.variable.equalsIgnoreCase(previous == null ? "" : previous)) {
+                text.append("// ").append("=".repeat(76)).append('\n');
+            }
+            previous = rule.variable;
+            text.append("// Variable ").append(rule.variable);
+            if (rule.description != null) {
+                text.append(" – ").append(rule.description);
+            }
+            text.append('\n')
+                    .append("// Bausteine: ").append(String.join(", ", rule.bausteine)).append('\n')
+                    .append("// Vorlagen (").append(rule.vorlagen.size()).append("): ")
+                    .append(String.join(", ", rule.vorlagen)).append('\n')
+                    .append(rule.code).append("\n\n");
+        }
+        if (rules.isEmpty()) {
+            text.append("// keine Variablen-Regeln gefunden\n");
+        }
+        return text.toString();
     }
 
     /** Skript einer Vorlage: Kopf, Variablen-Regeln, Anzeige-Regeln – je Baustein ein Abschnitt. */

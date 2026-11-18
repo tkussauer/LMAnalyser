@@ -222,6 +222,19 @@ Regeln der Übersetzung:
 - Eingebundene Bausteine erscheinen als `include("ID"); // Description, groupentry NAME`
 - Jeder Baustein wird je Vorlage nur einmal ausgegeben, gruppiert unter `// --- Baustein ID – Description`
 
+Zum Schluss entsteht zusätzlich die Gesamtdatei **`Variablen_Gesamt_Script.txt`**: alle
+Variablen-Regeln aller verarbeiteten Vorlagen, **ohne Anzeige-Regeln** und **ohne Dubletten**,
+sortiert nach Variable. Eine Dublette ist dieselbe Variable mit derselben Bedingungslogik (gleicher
+Code); die Beschreibung zählt nicht mit. Unterscheidet sich die Bedingung, bleiben beide Regeln
+erhalten. Jede Regel nennt die Bausteine und Vorlagen, in denen sie vorkommt:
+
+```js
+// Variable VAR_LE_INT_STERNCHEN – Sternchenandruck
+// Bausteine: 300001 – Beitragsdarstellung
+// Vorlagen (2): HL_KO_LE_SBU, HL_KO_LE_SEU
+if (Data.BusinessData.VT.gewinnverwendungKey_BUZ == "BEIVERR") { … }
+```
+
 In IntelliJ: Startkonfiguration **Condition-Script (Beispiel)**.
 
 ## Beispiel
