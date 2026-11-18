@@ -179,6 +179,51 @@ Nicht ausgewertet werden `<conditionValue>` und `<const>` (Literale, z. B. Looku
 normaler Text. Einzelne Wörter ohne Punkt, Unterstrich oder Binnengroßbuchstaben (z. B. `DOPDATE`,
 `TAB`) werden allein nicht erkannt, als Teil einer Zuordnung (`DOPDATE,Data.…`) aber schon.
 
+## Vierte Anwendung: Bedingungen als Skript
+
+`de.xmltree.ConditionScript` liest – mit denselben Optionen wie der Tree-Viewer – ab einer Vorlage
+(oder für alle Vorlagen eines Verzeichnisses) alle `<conditions>` der erreichbaren Bausteine aus
+und schreibt sie je Vorlage als `<Vorlage>_Script.js` ins `--out`-Verzeichnis.
+
+```bash
+java -cp target/xml-tree-viewer-1.0.0.jar de.xmltree.ConditionScript \
+     --start C:\vorlagen --dir C:\bausteine --out C:\ergebnis
+```
+
+**Variablen-Regeln** – Bedingungen, deren `<then>` Variablen per `<set>` setzt, je Variable:
+
+```js
+// Variable VAR_LE_INT_STERNCHEN – Sternchenandruck
+if (Data.BusinessData.VT.gewinnverwendungKey_BUZ == "BEIVERR") {
+    return "*";
+} else {
+    return "";
+}
+```
+
+**Anzeige-Regeln** (gesonderter Abschnitt) – Bedingungen mit Inhalt (DCF-Content wie Tabellen und
+Absätze, eingebundene Bausteine):
+
+```js
+// Anzeige-Regel
+if (Data.BusinessData.sofortBeginnend != "1" && Data.BusinessData.VT.gewinnverwendungKey_BUZ == "BEIVERR") {
+    display(`( ${Data.BusinessData.Doku.textAnfaenglZw} Tarifbeitrag) (${Data.BusinessData.Doku.tarifbeitragGesamt} EUR)`); // <table>
+}
+```
+
+Regeln der Übersetzung:
+
+- `<equalTo/>`, `<notEqualTo/>`, `<and/>`, `<or/>`, `<parenthesis>` → `==`, `!=`, `&&`, `||`, `( … )`;
+  `negation="true"` → `!( … )`; `<function name="LOOKUP">` → `LOOKUP(…)`; `<cmd>` → Verkettung mit `+`
+- Aufeinanderfolgende `<conditions>` bilden eine `if … else if`-Kette; ein Block mit dem Kommentar
+  `ELSE CONDITION` (oder ein `<else>`) wird zum `else`
+- Verschachtelte Bedingungen erscheinen als umschließendes `if`, Schleifen als Kommentar
+  `// für jedes Element aus …`
+- Eingebundene Bausteine erscheinen als `include("ID"); // Description, groupentry NAME`
+- Jeder Baustein wird je Vorlage nur einmal ausgegeben, gruppiert unter `// --- Baustein ID – Description`
+
+In IntelliJ: Startkonfiguration **Condition-Script (Beispiel)**.
+
 ## Beispiel
 
 Unter `samples/` liegt eine Vorlage im echten Format mit Gruppe, Zyklus und fehlendem Baustein:
