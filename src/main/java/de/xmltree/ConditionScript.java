@@ -56,94 +56,13 @@ public final class ConditionScript {
     }
 
     static int run(String[] args) {
-        String start = null;
-        Path out = Path.of(".");
-        List<Path> dirs = new ArrayList<>();
-        Set<String> idNames = ScanOptions.DEFAULT_ID_NAMES;
-        Set<String> descNames = ScanOptions.DEFAULT_DESCRIPTION_NAMES;
-        Set<String> refNames = ScanOptions.DEFAULT_REFERENCE_NAMES;
-        Set<String> extensions = ScanOptions.DEFAULT_EXTENSIONS;
-        boolean ignoreCase = false;
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            switch (arg) {
-                case "-h", "--help" -> {
-                    System.out.println(USAGE);
-                    return 0;
-                }
-                case "--start" -> start = Main.next(args, ++i, arg);
-                case "--dir" -> dirs.add(Path.of(Main.next(args, ++i, arg)));
-                case "--out" -> out = Path.of(Main.next(args, ++i, arg));
-                case "--id-names" -> idNames = Main.names(Main.next(args, ++i, arg));
-                case "--desc-names" -> descNames = Main.names(Main.next(args, ++i, arg));
-                case "--ref-names" -> {
-                    String value = Main.next(args, ++i, arg);
-                    refNames = value.trim().equals("*") ? Set.of() : Main.names(value);
-                }
-                case "--ext" -> extensions = Main.names(Main.next(args, ++i, arg));
-                case "--ignore-case" -> ignoreCase = true;
-                default -> throw new IllegalArgumentException("Unbekannte Option: " + arg);
-            }
+        TemplateSelection selection = TemplateSelection.parse(args, USAGE);
+        if (selection == null) {
+            return 0;
         }
-        if (start == null) {
-            throw new IllegalArgumentException("--start fehlt");
-        }
-        ScanOptions options = new ScanOptions(idNames, descNames, refNames, ignoreCase, extensions);
-        XmlScanner scanner = new XmlScanner(options);
-        Path startPath = Path.of(start);
-        boolean startIsDir = Files.isDirectory(startPath);
-        boolean startIsFile = Files.isRegularFile(startPath);
-        if (dirs.isEmpty()) {
-            dirs.add(startIsDir ? startPath : startIsFile ? startPath.toAbsolutePath().getParent() : Path.of("."));
-        }
-        for (Path dir : dirs) {
-            if (!Files.isDirectory(dir)) {
-                throw new IllegalArgumentException("Kein Verzeichnis: " + dir);
-            }
-        }
-
-        // Index aus Bausteinen und Vorlagen, jede Datei nur einmal
-        Map<Path, XmlFile> byPath = new LinkedHashMap<>();
-        for (XmlFile file : scanner.scanDirectories(dirs)) {
-            byPath.put(normalize(file.path()), file);
-        }
-        List<XmlFile> templates = new ArrayList<>();
-        if (startIsDir) {
-            Path root = normalize(startPath);
-            List<XmlFile> found = new ArrayList<>(scanner.scanDirectories(List.of(startPath)));
-            found.sort(Comparator.comparingInt((XmlFile f) -> root.relativize(normalize(f.path())).getNameCount())
-                    .thenComparing(f -> root.relativize(normalize(f.path())).toString().replace('\\', '/')
-                            .toLowerCase(Locale.ROOT)));
-            for (XmlFile template : found) {
-                templates.add(byPath.computeIfAbsent(normalize(template.path()), p -> template));
-            }
-        } else if (startIsFile) {
-            XmlFile template = byPath.get(normalize(startPath));
-            if (template == null) {
-                try {
-                    template = scanner.scanFile(startPath);
-                } catch (IOException | SAXException e) {
-                    throw new IllegalArgumentException("Vorlage nicht lesbar oder kein gültiges XML: " + startPath
-                            + " (" + e.getMessage() + ")");
-                }
-                byPath.put(normalize(startPath), template);
-            }
-            templates.add(template);
-        }
-        TreeBuilder builder = new TreeBuilder(new ArrayList<>(byPath.values()), options);
-        if (!startIsDir && !startIsFile) {
-            List<XmlFile> hits = builder.lookup(start);
-            if (hits.size() != 1) {
-                throw new IllegalArgumentException(hits.isEmpty()
-                        ? "Keine Datei mit Pfad, ID oder Description '" + start + "' gefunden"
-                        : "'" + start + "' ist mehrdeutig");
-            }
-            templates.add(hits.get(0));
-        }
-        if (templates.isEmpty()) {
-            throw new IllegalArgumentException("Keine Vorlagen mit den Endungen " + options.extensions() + " in " + startPath);
-        }
-
+        List<XmlFile> templates = selection.templates();
+        TreeBuilder builder = selection.builder();
+        Path out = selection.out();
         ScriptGenerator generator = new ScriptGenerator(builder::lookup);
         Map<XmlFile, ScriptGenerator.Rules> cache = new HashMap<>();
         Set<String> usedNames = new HashSet<>(Set.of(TOTAL_FILE.toLowerCase(Locale.ROOT)));

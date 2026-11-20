@@ -237,6 +237,24 @@ if (Data.BusinessData.VT.gewinnverwendungKey_BUZ == "BEIVERR") { … }
 
 In IntelliJ: Startkonfiguration **Condition-Script (Beispiel)**.
 
+## Fünfte Anwendung: Blöcke (Groupentries) als Liste
+
+`de.xmltree.GroupEntryList` listet – mit denselben Optionen wie der Tree-Viewer – alle Blöcke
+(`<groupentry>`) der ab einer Vorlage erreichbaren Bausteine in einer HTML-Seite
+`<Vorlage>_Bloecke.html`.
+
+```bash
+java -cp target/xml-tree-viewer-1.0.0.jar de.xmltree.GroupEntryList \
+     --start C:\vorlagen --dir C:\bausteine --out C:\ergebnis
+```
+
+Die Seite zeigt je Block Gruppe, Groupentry-Name, Description, eingebundene Baustein-ID(s),
+vorausgewählt/optional und den Baustein, in dem er steht. Mit Filterfeld und Häkchen wählt man
+Blöcke aus; **„Als Liste ausgeben“** erzeugt daraus eine kommaseparierte Liste (Groupentry-Namen
+oder Baustein-IDs, Trennzeichen einstellbar, jeder Wert nur einmal) mit Kopieren-Button.
+
+In IntelliJ: Startkonfiguration **Bloecke (Beispiel)**.
+
 ## Beispiel
 
 Unter `samples/` liegt eine Vorlage im echten Format mit Gruppe, Zyklus und fehlendem Baustein:
